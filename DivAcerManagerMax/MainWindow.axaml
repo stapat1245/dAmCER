@@ -4,656 +4,767 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:views="clr-namespace:DivAcerManagerMax"
         xmlns:material="using:Material.Icons.Avalonia"
-        mc:Ignorable="d" d:DesignWidth="1000" d:DesignHeight="700"
+        mc:Ignorable="d" d:DesignWidth="1280" d:DesignHeight="800"
 
         x:Class="DivAcerManagerMax.MainWindow"
         Title="DAMX"
         Icon="iconTransparent.png"
         WindowStartupLocation="CenterScreen"
         SystemDecorations="Full"
-        Background="#0e0e11"
+        Background="#0B0B0F"
+        FontFamily="{StaticResource OpenSansFont}"
 
-        Width="1200" Height="700"
-        MinWidth="1200" MinHeight="480">
+        Width="1280" Height="800"
+        MinWidth="1100" MinHeight="680">
 
+    <Grid ColumnDefinitions="248,*">
 
-    <Grid>
+        <!-- ================= Sidebar ================= -->
+        <Border Grid.Column="0" Background="#0E0E13" BorderBrush="{StaticResource DmxBorder}"
+                BorderThickness="0,0,1,0">
+            <Grid RowDefinitions="Auto,*,Auto">
 
-        <Grid RowDefinitions="Auto,*">
-
-            <!-- App Header -->
-            <Image Source="closeupTransparent.png" Height="40" Margin="0" HorizontalAlignment="Center"
-                   VerticalAlignment="Bottom" />
-            <Border Grid.Row="0" Padding="0 20 0 0" CornerRadius="20">
-
-                <StackPanel HorizontalAlignment="Right" Margin="0" Orientation="Horizontal">
-
-                    <TextBlock Text="Div Acer Manager MAX" FontSize="26" FontWeight="Bold"
-                               LetterSpacing="4" VerticalAlignment="Bottom"
-                               HorizontalAlignment="Right" Margin="0 0 20 0"
-                               FontFamily="{StaticResource OxaniumBoldFont}">
-                        <TextBlock.Foreground>
-
-
-                            <LinearGradientBrush StartPoint="0%,0%" EndPoint="0%, 100%">
-                                <GradientStop Offset="0" Color="#72bff4" />
-                                <GradientStop Offset="1" Color="#3678c3" />
-                            </LinearGradientBrush>
-                        </TextBlock.Foreground>
-                    </TextBlock>
-
+                <StackPanel Grid.Row="0" Margin="20,22,20,18" Spacing="12">
+                    <StackPanel Orientation="Horizontal" Spacing="10">
+                        <Image Source="closeupTransparent.png" Height="24" VerticalAlignment="Center" />
+                    </StackPanel>
+                    <StackPanel Spacing="2">
+                        <TextBlock Text="Div Acer Manager" Classes="H1" />
+                        <TextBlock Text="MAX · Linux suite" Classes="Caption" />
+                    </StackPanel>
                 </StackPanel>
-            </Border>
 
+                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Disabled">
+                    <StackPanel Margin="12,0" Spacing="1">
+                        <Button x:Name="NavOverview" Classes="Nav" Tag="Overview" Click="NavButton_OnClick">
+                            <StackPanel Orientation="Horizontal" Spacing="12">
+                                <material:MaterialIcon Kind="ViewDashboard" Width="18" Height="18" />
+                                <TextBlock Text="Overview" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+                        <Button x:Name="NavPerformance" Classes="Nav" Tag="Performance" Click="NavButton_OnClick">
+                            <StackPanel Orientation="Horizontal" Spacing="12">
+                                <material:MaterialIcon Kind="Tune" Width="18" Height="18" />
+                                <TextBlock Text="Performance" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+                        <Button x:Name="NavBattery" Classes="Nav" Tag="Battery" Click="NavButton_OnClick">
+                            <StackPanel Orientation="Horizontal" Spacing="12">
+                                <material:MaterialIcon Kind="BatteryCharging" Width="18" Height="18" />
+                                <TextBlock Text="Battery" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+                        <Button x:Name="NavKeyboard" Classes="Nav" Tag="Keyboard" Click="NavButton_OnClick">
+                            <StackPanel Orientation="Horizontal" Spacing="12">
+                                <material:MaterialIcon Kind="Keyboard" Width="18" Height="18" />
+                                <TextBlock Text="Keyboard" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+                        <Button x:Name="NavSystem" Classes="Nav" Tag="System" Click="NavButton_OnClick">
+                            <StackPanel Orientation="Horizontal" Spacing="12">
+                                <material:MaterialIcon Kind="Monitor" Width="18" Height="18" />
+                                <TextBlock Text="System" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+                        <Button x:Name="NavDiagnostics" Classes="Nav" Tag="Diagnostics" Click="NavButton_OnClick">
+                            <StackPanel Orientation="Horizontal" Spacing="12">
+                                <material:MaterialIcon Kind="Stethoscope" Width="18" Height="18" />
+                                <TextBlock Text="Diagnostics" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+                        <Button x:Name="NavCompatibility" Classes="Nav" Tag="Compatibility" Click="NavButton_OnClick">
+                            <StackPanel Orientation="Horizontal" Spacing="12">
+                                <material:MaterialIcon Kind="CheckDecagramOutline" Width="18" Height="18" />
+                                <TextBlock Text="Compatibility" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
 
-            <!-- Main Content -->
-            <TabControl Grid.Row="1" Margin="10,0,10,10" CornerRadius="20" Background="#18181b" BorderBrush="#18181b"
-                        BorderThickness="5" TabStripPlacement="Left">
+                        <Border Classes="Hairline" Margin="12,10" />
 
-                <TabItem Header="Dashboard">
+                        <Button x:Name="NavInternals" Classes="Nav" Tag="Internals" Click="InternalsMangerWindow_OnClick">
+                            <StackPanel Orientation="Horizontal" Spacing="12">
+                                <material:MaterialIcon Kind="Wrench" Width="18" Height="18" />
+                                <TextBlock Text="Internals manager" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+                </ScrollViewer>
 
-                    <views:Dashboard />
+                <StackPanel Grid.Row="2" Margin="16,12,16,18" Spacing="10">
+                    <Border x:Name="DaemonStatusChip" Classes="Well" Padding="12,9">
+                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="9">
+                            <Border x:Name="DaemonStatusDot" Width="8" Height="8" CornerRadius="4"
+                                    Background="{StaticResource DmxWarning}" VerticalAlignment="Center" />
+                            <StackPanel Grid.Column="1" Spacing="1">
+                                <TextBlock x:Name="DaemonStatusText" Text="Connecting…" FontSize="12"
+                                           FontWeight="SemiBold" />
+                                <TextBlock x:Name="DaemonStatusDetail" Text="DAMX daemon" Classes="Caption" />
+                            </StackPanel>
+                            <Button x:Name="RetryConnectionButton" Grid.Column="2" Classes="Icon"
+                                    Click="RetryConnectionButton_OnClick" ToolTip.Tip="Retry connection">
+                                <material:MaterialIcon Kind="Refresh" Width="16" Height="16" />
+                            </Button>
+                        </Grid>
+                    </Border>
+                    <TextBlock x:Name="ProjectVersionText" Text="v—" Classes="Caption" Margin="2,0,0,0" />
+                </StackPanel>
+            </Grid>
+        </Border>
 
-                </TabItem>
+        <!-- ================= Content ================= -->
+        <Grid Grid.Column="1" RowDefinitions="Auto,*">
 
-                <!-- Power & Performance Tab -->
-                <TabItem Header="Power &amp; Performance">
-                    <ScrollViewer>
-                        <StackPanel Margin="10,0,20,0">
-                            <TextBlock Text="Power &amp; Performance" Classes="SectionHeader" />
+            <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="24,18,24,10">
+                <StackPanel Grid.Column="0" Spacing="1">
+                    <TextBlock x:Name="PageTitle" Text="Overview" Classes="Display" />
+                    <TextBlock x:Name="PageSubtitle" Classes="Caption"
+                               Text="Live hardware telemetry and quick controls" />
+                </StackPanel>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                    <material:MaterialIcon x:Name="HeaderPowerIcon" Kind="PowerPlugOutline" Width="15" Height="15" />
+                    <TextBlock x:Name="HeaderPowerText" Text="Detecting power source…" FontSize="12"
+                               VerticalAlignment="Center" Classes="Muted" />
+                </StackPanel>
+            </Grid>
 
-                            <Border Classes="Card" x:Name="ThermalProfilePanel">
-                                <StackPanel>
-                                    <!-- Header row with switch -->
-                                    <Grid ColumnDefinitions="*,Auto" Margin="0 0 0 10">
-                                        <TextBlock Text="Performance Profiles" Classes="SubHeader"
+            <Grid Grid.Row="1" Margin="0">
+
+                <!-- ========== Overview ========== -->
+                <ScrollViewer x:Name="PageOverview">
+                    <views:Dashboard x:Name="Overview" />
+                </ScrollViewer>
+
+                <!-- ========== Performance ========== -->
+                <ScrollViewer x:Name="PagePerformance" IsVisible="False">
+                    <StackPanel Margin="24,4,24,24">
+
+                        <Border Classes="Card" x:Name="ThermalProfilePanel">
+                            <StackPanel Spacing="12">
+                                <StackPanel Spacing="2">
+                                    <TextBlock Text="Performance profiles" Classes="H2" />
+                                    <TextBlock
+                                        Text="Preset modes that balance speed, power draw and cooling. Available profiles depend on AC / battery state."
+                                        Classes="Dim" FontSize="12" TextWrapping="Wrap" />
+                                </StackPanel>
+
+                                <WrapPanel x:Name="ProfileTilesPanel">
+                                    <RadioButton x:Name="LowPowerProfileButton" GroupName="ProfileGroup" Classes="Tile">
+                                        <StackPanel Spacing="6" HorizontalAlignment="Center">
+                                            <material:MaterialIcon Kind="Leaf" Width="30" Height="30"
+                                                                   HorizontalAlignment="Center" />
+                                            <TextBlock Text="Eco" HorizontalAlignment="Center" FontWeight="SemiBold" />
+                                            <TextBlock Text="Battery first" HorizontalAlignment="Center" Classes="Caption" />
+                                        </StackPanel>
+                                    </RadioButton>
+                                    <RadioButton x:Name="QuietProfileButton" GroupName="ProfileGroup" Classes="Tile">
+                                        <StackPanel Spacing="6" HorizontalAlignment="Center">
+                                            <material:MaterialIcon Kind="FanMinus" Width="30" Height="30"
+                                                                   HorizontalAlignment="Center" />
+                                            <TextBlock Text="Quiet" HorizontalAlignment="Center" FontWeight="SemiBold" />
+                                            <TextBlock Text="Lowest noise" HorizontalAlignment="Center" Classes="Caption" />
+                                        </StackPanel>
+                                    </RadioButton>
+                                    <RadioButton x:Name="BalancedProfileButton" GroupName="ProfileGroup" Classes="Tile">
+                                        <StackPanel Spacing="6" HorizontalAlignment="Center">
+                                            <material:MaterialIcon Kind="Bicycle" Width="30" Height="30"
+                                                                   HorizontalAlignment="Center" />
+                                            <TextBlock Text="Balanced" HorizontalAlignment="Center" FontWeight="SemiBold" />
+                                            <TextBlock Text="Everyday" HorizontalAlignment="Center" Classes="Caption" />
+                                        </StackPanel>
+                                    </RadioButton>
+                                    <RadioButton x:Name="PerformanceProfileButton" GroupName="ProfileGroup" Classes="Tile">
+                                        <StackPanel Spacing="6" HorizontalAlignment="Center">
+                                            <material:MaterialIcon Kind="CarSide" Width="30" Height="30"
+                                                                   HorizontalAlignment="Center" />
+                                            <TextBlock Text="Performance" HorizontalAlignment="Center"
+                                                       FontWeight="SemiBold" />
+                                            <TextBlock Text="High load" HorizontalAlignment="Center" Classes="Caption" />
+                                        </StackPanel>
+                                    </RadioButton>
+                                    <RadioButton x:Name="TurboProfileButton" GroupName="ProfileGroup" Classes="Tile">
+                                        <StackPanel Spacing="6" HorizontalAlignment="Center">
+                                            <material:MaterialIcon Kind="RocketLaunch" Width="30" Height="30"
+                                                                   HorizontalAlignment="Center" />
+                                            <TextBlock Text="Turbo" HorizontalAlignment="Center" FontWeight="SemiBold" />
+                                            <TextBlock Text="Maximum power" HorizontalAlignment="Center"
+                                                       Classes="Caption" />
+                                        </StackPanel>
+                                    </RadioButton>
+                                </WrapPanel>
+
+                                <TextBlock x:Name="ThermalProfileInfoText" Classes="Dim" FontSize="12"
+                                           TextWrapping="Wrap" Margin="0,2,0,0"
+                                           Text="Select a profile to apply it instantly." />
+                            </StackPanel>
+                        </Border>
+
+                        <Border Classes="Card">
+                            <StackPanel Spacing="12">
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <StackPanel Spacing="2">
+                                        <TextBlock Text="Custom profiles" Classes="H2" />
+                                        <TextBlock Text="Save the current configuration and restore it in one click."
+                                                   Classes="Dim" FontSize="12" TextWrapping="Wrap" />
+                                    </StackPanel>
+                                    <TextBlock x:Name="ProfileCountText" Grid.Column="1" Classes="Caption"
+                                               VerticalAlignment="Center" />
+                                </Grid>
+
+                                <StackPanel x:Name="ProfilesListPanel" Spacing="8" />
+
+                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                    <TextBox x:Name="ProfileNameTextBox" PlaceholderText="Profile name (e.g. Gaming)" />
+                                    <Button x:Name="SaveProfileButton" Grid.Column="1" Classes="Primary"
+                                            Content="Save current" Click="SaveProfileButton_OnClick" />
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Classes="Card" x:Name="FanControlPanel">
+                            <StackPanel Spacing="12">
+                                <StackPanel Spacing="2">
+                                    <TextBlock Text="Cooling" Classes="H2" />
+                                    <TextBlock Text="Control CPU and GPU fans directly, or let the embedded controller decide."
+                                               Classes="Dim" FontSize="12" TextWrapping="Wrap" />
+                                </StackPanel>
+
+                                <StackPanel Orientation="Horizontal">
+                                    <RadioButton x:Name="AutoFanSpeedRadioButton" GroupName="FanModeGroup"
+                                                 Classes="Segment" Content="Auto" />
+                                    <RadioButton x:Name="MaxFanSpeedRadioButton" GroupName="FanModeGroup"
+                                                 Classes="Segment" Content="Max"
+                                                 Click="MaxFanSpeedRadioButton_OnClick" />
+                                    <RadioButton x:Name="ManualFanSpeedRadioButton" GroupName="FanModeGroup"
+                                                 Classes="Segment" Content="Manual" />
+                                    <RadioButton x:Name="CurveFanRadioButton" GroupName="FanModeGroup"
+                                                 Classes="Segment" Content="Curve" />
+                                </StackPanel>
+
+                                <TextBlock x:Name="ManualDisabledInfoText" Classes="Dim" FontSize="12"
+                                           Text="Manual fan controls are disabled in Quiet profile to keep noise down."
+                                           IsVisible="False" />
+
+                                <StackPanel x:Name="ManualFanPanel" Spacing="12" IsVisible="False">
+                                    <Border Classes="Well">
+                                        <StackPanel Spacing="12">
+                                            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+                                                <TextBlock Text="CPU fan" Width="64" VerticalAlignment="Center"
+                                                           Classes="Label" />
+                                                <Slider x:Name="CpuFanSlider" Grid.Column="1" Value="50" Minimum="0"
+                                                        Maximum="100" />
+                                                <TextBlock x:Name="CpuFanTextBlock" Grid.Column="2" Text="50%"
+                                                           Width="52" TextAlignment="Right" Classes="Value" />
+                                            </Grid>
+                                            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+                                                <TextBlock Text="GPU fan" Width="64" VerticalAlignment="Center"
+                                                           Classes="Label" />
+                                                <Slider x:Name="GpuFanSlider" Grid.Column="1" Value="70" Minimum="0"
+                                                        Maximum="100" />
+                                                <TextBlock x:Name="GpuFanTextBlock" Grid.Column="2" Text="70%"
+                                                           Width="52" TextAlignment="Right" Classes="Value" />
+                                            </Grid>
+                                        </StackPanel>
+                                    </Border>
+
+                                    <StackPanel Orientation="Horizontal" Spacing="10">
+                                        <Button x:Name="SetManualSpeedButton" Classes="Primary"
+                                                Content="Apply fan settings" Click="SetManualSpeedButton_OnClick" />
+                                        <TextBlock Text="0 % lets the EC run the fan automatically."
+                                                   Classes="Caption" VerticalAlignment="Center" />
+                                    </StackPanel>
+                                </StackPanel>
+
+                                <StackPanel x:Name="CurveFanPanel" Spacing="12" IsVisible="False">
+                                    <Border Classes="Well" Padding="0">
+                                        <Canvas x:Name="CurveCanvas" Height="190" Margin="12" ClipToBounds="True" />
+                                    </Border>
+
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <TextBlock Text="Presets" Classes="Label" VerticalAlignment="Center" />
+                                        <StackPanel x:Name="CurvePresetPanel" Orientation="Horizontal" />
+                                    </StackPanel>
+
+                                    <StackPanel x:Name="CurvePointsPanel" Spacing="8" />
+
+                                    <StackPanel Orientation="Horizontal" Spacing="10">
+                                        <Button x:Name="AddCurvePointButton" Classes="Ghost" Content="Add point"
+                                                Click="AddCurvePointButton_OnClick" />
+                                        <Button x:Name="SaveCurveButton" Classes="Ghost" Content="Save curve"
+                                                Click="SaveCurveButton_OnClick" />
+                                        <TextBlock x:Name="CurveStatusText" Classes="Caption"
+                                                   VerticalAlignment="Center"
+                                                   Text="Curve applies while DAMX is running." />
+                                    </StackPanel>
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+
+                <!-- ========== Battery ========== -->
+                <ScrollViewer x:Name="PageBattery" IsVisible="False">
+                    <StackPanel Margin="24,4,24,24">
+
+                        <Border Classes="Card">
+                            <StackPanel Spacing="14">
+                                <TextBlock Text="Battery status" Classes="H2" />
+                                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="24">
+                                    <StackPanel Grid.Column="0" Spacing="8" MinWidth="200">
+                                        <TextBlock x:Name="BatteryPagePercent" Text="—" Classes="Display" />
+                                        <ProgressBar x:Name="BatteryPageBar" Value="0" Maximum="100" Width="200" />
+                                        <TextBlock x:Name="BatteryPageStatus" Text="Unknown" Classes="Muted"
+                                                   FontSize="12" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1" Spacing="8" VerticalAlignment="Center">
+                                        <Grid ColumnDefinitions="*,Auto">
+                                            <TextBlock Text="Remaining" Classes="Label" />
+                                            <TextBlock x:Name="BatteryPageTime" Grid.Column="1" Text="—"
+                                                       Classes="Value" />
+                                        </Grid>
+                                        <Grid ColumnDefinitions="*,Auto">
+                                            <TextBlock Text="Health" Classes="Label" />
+                                            <TextBlock x:Name="BatteryHealthText" Grid.Column="1" Text="—"
+                                                       Classes="Value" />
+                                        </Grid>
+                                        <ProgressBar x:Name="BatteryHealthBar" Value="0" Maximum="100" />
+                                        <Grid ColumnDefinitions="*,Auto">
+                                            <TextBlock Text="Cycle count" Classes="Label" />
+                                            <TextBlock x:Name="BatteryCyclesText" Grid.Column="1" Text="—"
+                                                       Classes="Value" />
+                                        </Grid>
+                                        <Grid ColumnDefinitions="*,Auto">
+                                            <TextBlock Text="Full / design capacity" Classes="Label" />
+                                            <TextBlock x:Name="BatteryEnergyText" Grid.Column="1" Text="—"
+                                                       Classes="Value" />
+                                        </Grid>
+                                        <Grid ColumnDefinitions="*,Auto">
+                                            <TextBlock Text="Current draw" Classes="Label" />
+                                            <TextBlock x:Name="BatteryPowerText" Grid.Column="1" Text="—"
+                                                       Classes="Value" />
+                                        </Grid>
+                                    </StackPanel>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Classes="Card" x:Name="LimiterControls">
+                            <StackPanel Spacing="10">
+                                <TextBlock Text="Charge limiter" Classes="H2" />
+                                <TextBlock Text="Caps charging at 80 % to slow battery ageing on machines that stay plugged in."
+                                           Classes="Dim" FontSize="12" TextWrapping="Wrap" />
+                                <CheckBox x:Name="BatteryLimitCheckBox" Content="Limit charging to 80 %"
+                                          Click="BatteryLimitCheckBox_Click" />
+                            </StackPanel>
+                        </Border>
+
+                        <Border Classes="Card" x:Name="CalibrationControls">
+                            <StackPanel Spacing="10">
+                                <TextBlock Text="Battery calibration" Classes="H2" />
+                                <TextBlock Text="Calibration fully charges, drains and recharges the battery so percentage readings stay accurate. Keep the charger connected during the full cycle."
+                                           Classes="Dim" FontSize="12" TextWrapping="Wrap" />
+                                <Border Classes="Well">
+                                    <TextBlock x:Name="CalibrationStatusTextBlock" Text="Status: not calibrating"
+                                               FontWeight="SemiBold" />
+                                </Border>
+                                <StackPanel Orientation="Horizontal" Spacing="10">
+                                    <Button x:Name="StartCalibrationButton" Classes="Primary" Content="Start calibration" />
+                                    <Button x:Name="StopCalibrationButton" Classes="DangerGhost" Content="Stop calibration"
+                                            IsEnabled="False" />
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Classes="Card" x:Name="UsbChargingPanel">
+                            <StackPanel Spacing="10">
+                                <TextBlock Text="USB Power Delivery" Classes="H2" />
+                                <TextBlock Text="Allow USB ports to charge devices while the laptop is powered off."
+                                           Classes="Dim" FontSize="12" TextWrapping="Wrap" />
+                                <ComboBox x:Name="UsbChargingComboBox" SelectedIndex="0" Width="280"
+                                          HorizontalAlignment="Left"
+                                          SelectionChanged="UsbChargingComboBox_OnSelectionChanged">
+                                    <ComboBoxItem Content="Disabled" />
+                                    <ComboBoxItem Content="Until battery reaches 10 %" />
+                                    <ComboBoxItem Content="Until battery reaches 20 %" />
+                                    <ComboBoxItem Content="Until battery reaches 30 %" />
+                                </ComboBox>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+
+                <!-- ========== Keyboard ========== -->
+                <ScrollViewer x:Name="PageKeyboard" IsVisible="False">
+                    <StackPanel Margin="24,4,24,24">
+
+                        <Border Classes="Card" x:Name="RgbPresetControls">
+                            <StackPanel Spacing="12">
+                                <StackPanel Spacing="2">
+                                    <TextBlock Text="Lighting presets" Classes="H2" />
+                                    <TextBlock Text="One-click color sets for the four keyboard zones."
+                                               Classes="Dim" FontSize="12" TextWrapping="Wrap" />
+                                </StackPanel>
+                                <WrapPanel x:Name="RgbPresetsPanel" />
+                            </StackPanel>
+                        </Border>
+
+                        <Border Classes="Card" x:Name="ZoneColorControlPanel">
+                            <StackPanel Spacing="14">
+                                <StackPanel Spacing="2">
+                                    <TextBlock Text="Zone colors" Classes="H2" />
+                                    <TextBlock Text="Static color per zone. Pick a color, then apply."
+                                               Classes="Dim" FontSize="12" TextWrapping="Wrap" />
+                                </StackPanel>
+
+                                <Grid ColumnDefinitions="*,*" ColumnSpacing="20" RowSpacing="10">
+                                    <StackPanel Grid.Column="0" Spacing="8">
+                                        <TextBlock Text="Zone 1" Classes="Label" />
+                                        <Border x:Name="Zone1Border" Background="#4287f5" Height="6" CornerRadius="3" />
+                                        <ColorPicker x:Name="Zone1ColorPicker" Color="#4287f5"
+                                                     IsAlphaEnabled="False" IsAlphaVisible="False" Height="44"
+                                                     HorizontalAlignment="Stretch" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1" Spacing="8">
+                                        <TextBlock Text="Zone 2" Classes="Label" />
+                                        <Border x:Name="Zone2Border" Background="#ff5733" Height="6" CornerRadius="3" />
+                                        <ColorPicker x:Name="Zone2ColorPicker" Color="#ff5733"
+                                                     IsAlphaEnabled="False" IsAlphaVisible="False" Height="44"
+                                                     HorizontalAlignment="Stretch" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="0" Spacing="8">
+                                        <TextBlock Text="Zone 3" Classes="Label" />
+                                        <Border x:Name="Zone3Border" Background="#33ff57" Height="6" CornerRadius="3" />
+                                        <ColorPicker x:Name="Zone3ColorPicker" Color="#33ff57"
+                                                     IsAlphaEnabled="False" IsAlphaVisible="False" Height="44"
+                                                     HorizontalAlignment="Stretch" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1" Spacing="8">
+                                        <TextBlock Text="Zone 4" Classes="Label" />
+                                        <Border x:Name="Zone4Border" Background="#FFFF01" Height="6" CornerRadius="3" />
+                                        <ColorPicker x:Name="Zone4ColorPicker" Color="#FFFF01"
+                                                     IsAlphaEnabled="False" IsAlphaVisible="False" Height="44"
+                                                     HorizontalAlignment="Stretch" />
+                                    </StackPanel>
+                                </Grid>
+
+                                <Border Classes="Hairline" />
+
+                                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+                                    <TextBlock Text="Brightness" Classes="Label" VerticalAlignment="Center" />
+                                    <Slider x:Name="KeyBrightnessSlider" Grid.Column="1" Value="100" Minimum="0"
+                                            Maximum="100" />
+                                    <TextBlock x:Name="KeyBrightnessText" Grid.Column="2" Text="100%"
+                                               Classes="Value" Width="48" TextAlignment="Right" />
+                                </Grid>
+
+                                <Button x:Name="ApplyKeyboardColorsButton" Classes="Primary"
+                                        Content="Apply zone colors" HorizontalAlignment="Left"
+                                        Click="ApplyKeyboardColorsButton_Click" />
+                            </StackPanel>
+                        </Border>
+
+                        <Border Classes="Card" x:Name="KeyboardEffectsPanel">
+                            <StackPanel Spacing="14">
+                                <StackPanel Spacing="2">
+                                    <TextBlock Text="Dynamic effects" Classes="H2" />
+                                    <TextBlock Text="Animated lighting modes with speed, direction and color."
+                                               Classes="Dim" FontSize="12" TextWrapping="Wrap" />
+                                </StackPanel>
+
+                                <Grid ColumnDefinitions="Auto,*,Auto,*" ColumnSpacing="12" RowDefinitions="Auto,Auto">
+                                    <TextBlock Text="Mode" Classes="Label" VerticalAlignment="Center" />
+                                    <ComboBox x:Name="LightingModeComboBox" Grid.Column="1" SelectedIndex="0">
+                                        <ComboBoxItem Content="Static" />
+                                        <ComboBoxItem Content="Breathing" />
+                                        <ComboBoxItem Content="Neon" />
+                                        <ComboBoxItem Content="Wave" />
+                                        <ComboBoxItem Content="Shifting" />
+                                        <ComboBoxItem Content="Zoom" />
+                                        <ComboBoxItem Content="Meteor" />
+                                        <ComboBoxItem Content="Twinkling" />
+                                    </ComboBox>
+
+                                    <TextBlock Grid.Row="1" Text="Speed" Classes="Label" VerticalAlignment="Center"
+                                               Margin="0,10,0,0" />
+                                    <StackPanel Grid.Row="1" Grid.Column="1" Orientation="Horizontal" Spacing="10"
+                                                Margin="0,10,0,0">
+                                        <Slider x:Name="LightingSpeedSlider" Value="5" Minimum="0" Maximum="9"
+                                                IsSnapToTickEnabled="True" TickFrequency="1" Width="180" />
+                                        <TextBlock x:Name="LightSpeedTextBlock" Text="5" Classes="Value"
                                                    VerticalAlignment="Center" />
-                                        <ToggleSwitch x:Name="PluggedInToggleSwitch" Grid.Column="1"
-                                                      VerticalAlignment="Center" IsChecked="True"
-                                                      IsHitTestVisible="False">
-                                            <ToggleSwitch.OffContent>
-                                                <material:MaterialIcon Kind="BatteryOutline" Width="24" Height="24" />
-                                            </ToggleSwitch.OffContent>
-                                            <ToggleSwitch.OnContent>
-                                                <material:MaterialIcon Kind="PowerPlugOutline" Width="24" Height="24" />
-                                            </ToggleSwitch.OnContent>
-                                        </ToggleSwitch>
-                                    </Grid>
-
-                                    <TextBlock Text="Configure thermal profiles to balance performance and temperature"
-                                               Opacity="0.7" Margin="0 0 0 10" />
-
-                                    <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto" Margin="0 10">
-                                        <StackPanel Grid.Row="1" Grid.Column="1" Orientation="Horizontal"
-                                                    Margin="0 10 0 0" HorizontalAlignment="Center">
-                                            <RadioButton x:Name="LowPowerProfileButton" GroupName="ProfileGroup"
-                                                         Margin="0 0 15 0"
-                                                         IsVisible="{Binding ElementName=PluggedInToggleSwitch, Path=!IsChecked}">
-                                                <StackPanel>
-                                                    <material:MaterialIcon Kind="Leaf" Width="48" Height="48" />
-                                                    <TextBlock Text="Eco" HorizontalAlignment="Center" />
-                                                </StackPanel>
-                                            </RadioButton>
-
-                                            <RadioButton x:Name="QuietProfileButton" GroupName="ProfileGroup"
-                                                         Margin="0 0 15 0"
-                                                         IsVisible="{Binding ElementName=PluggedInToggleSwitch, Path=IsChecked}">
-                                                <StackPanel>
-                                                    <material:MaterialIcon Kind="FanMinus" Width="48" Height="48" />
-                                                    <TextBlock Text="Quiet" HorizontalAlignment="Center" />
-                                                </StackPanel>
-                                            </RadioButton>
-
-                                            <RadioButton x:Name="BalancedProfileButton" GroupName="ProfileGroup"
-                                                         Margin="0 0 15 0" IsChecked="True">
-                                                <StackPanel>
-                                                    <material:MaterialIcon Kind="Bicycle" Width="48" Height="48" />
-                                                    <TextBlock Text="Balanced" HorizontalAlignment="Center" />
-                                                </StackPanel>
-                                            </RadioButton>
-
-                                            <RadioButton x:Name="PerformanceProfileButton" GroupName="ProfileGroup"
-                                                         Margin="0 0 15 0"
-                                                         IsVisible="{Binding ElementName=PluggedInToggleSwitch, Path=IsChecked}">
-                                                <StackPanel>
-                                                    <material:MaterialIcon Kind="CarSide" Width="48" Height="48" />
-                                                    <TextBlock Text="Performance" HorizontalAlignment="Center" />
-                                                </StackPanel>
-                                            </RadioButton>
-
-                                            <RadioButton x:Name="TurboProfileButton" GroupName="ProfileGroup"
-                                                         Margin="0 0 15 0"
-                                                         IsVisible="{Binding ElementName=PluggedInToggleSwitch, Path=IsChecked}">
-                                                <StackPanel>
-                                                    <material:MaterialIcon Kind="RocketLaunch" Width="48" Height="48" />
-                                                    <TextBlock Text="Turbo" HorizontalAlignment="Center" />
-                                                </StackPanel>
-                                            </RadioButton>
-                                        </StackPanel>
-                                    </Grid>
-
-                                    <TextBlock x:Name="ThermalProfileInfoText" Opacity="0.7"
-                                               Text="Performance profiles are preset modes that control your device's speed, power use, and cooling:"
-                                               HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" />
-                                </StackPanel>
-                            </Border>
-
-                            <!-- Fan Speed Control -->
-                            <Border Classes="Card" x:Name="FanControlPanel">
-                                <StackPanel>
-                                    <TextBlock Text="Fan Speed Control" Classes="SubHeader" />
-                                    <TextBlock Text="Set custom fan speeds for CPU and GPU" Opacity="0.7"
-                                               Margin="0 0 0 10" />
-
-                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                                        <RadioButton x:Name="AutoFanSpeedRadioButton" GroupName="FanModeGroup"
-                                                     Margin="0 0 15 0" IsChecked="True">
-                                            <StackPanel>
-                                                <material:MaterialIcon Kind="AutoAwesome" Width="48" Height="48" />
-                                                <TextBlock Text="Auto" HorizontalAlignment="Center" />
-                                            </StackPanel>
-                                        </RadioButton>
-
-                                        <RadioButton x:Name="MaxFanSpeedRadioButton" GroupName="FanModeGroup"
-                                                     Margin="0 0 15 0"
-                                                     Click="MaxFanSpeedRadioButton_OnClick">
-                                            <StackPanel>
-                                                <material:MaterialIcon Kind="Turbine" Width="48" Height="48" />
-                                                <TextBlock Text="Max" HorizontalAlignment="Center" />
-                                            </StackPanel>
-                                        </RadioButton>
-
-                                        <RadioButton x:Name="ManualFanSpeedRadioButton" GroupName="FanModeGroup"
-                                                     Margin="0 0 15 0">
-                                            <StackPanel>
-                                                <material:MaterialIcon Kind="CarManualTransmission" Width="48"
-                                                                       Height="48" />
-                                                <TextBlock Text="Manual" HorizontalAlignment="Center" />
-                                            </StackPanel>
-                                        </RadioButton>
-
                                     </StackPanel>
-                                    <TextBlock x:Name="ManualDisabledInfoText" Opacity="0.5"
-                                               Text="Manual fan controls are disabled to ensure quiet operation"
-                                               HorizontalAlignment="Center" Margin="0,20,0 ,0"
-                                               IsVisible="{Binding ElementName=QuietProfileButton, Path=IsChecked}" />
 
-                                    <StackPanel
-                                        IsVisible="{Binding ElementName=ManualFanSpeedRadioButton , Path=IsChecked}">
+                                    <TextBlock Grid.Row="0" Grid.Column="2" Text="Color" Classes="Label"
+                                               VerticalAlignment="Center" Margin="16,0,0,0" />
+                                    <ColorPicker x:Name="LightEffectColorPicker" Grid.Row="0" Grid.Column="3"
+                                                 Color="#FFFF01" IsAlphaEnabled="False" IsAlphaVisible="False"
+                                                 Height="44" Margin="0" />
+                                </Grid>
 
-                                        <Grid ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto,Auto"
-                                              Margin="0 5">
-                                            <TextBlock Grid.Row="0" Grid.Column="0" Text="CPU Fan:"
-                                                       VerticalAlignment="Center" Width="80" />
-                                            <Slider x:Name="CpuFanSlider" Grid.Row="0" Grid.Column="1" Value="50" />
-                                            <TextBlock x:Name="CpuFanTextBlock" Grid.Row="0" Grid.Column="2"
-                                                       Text="50%"
-                                                       Width="50" TextAlignment="Right" />
+                                <StackPanel Orientation="Horizontal" Spacing="10">
+                                    <TextBlock Text="Direction" Classes="Label" VerticalAlignment="Center" />
+                                    <RadioButton x:Name="LeftToRightRadioButton" GroupName="DirectionGroup"
+                                                 Classes="Segment" IsChecked="True" Content="Left → right" />
+                                    <RadioButton x:Name="RightToLeftRadioButton" GroupName="DirectionGroup"
+                                                 Classes="Segment" Content="Right → left" />
+                                </StackPanel>
 
-                                            <TextBlock Grid.Row="1" Grid.Column="0" Text="GPU Fan:"
-                                                       VerticalAlignment="Center" Width="80" Margin="0 15 0 0" />
-                                            <Slider x:Name="GpuFanSlider" Grid.Row="1" Grid.Column="1" Value="70"
-                                                    Margin="0 15 0 0" />
-                                            <TextBlock x:Name="GpuFanTextBlock" Grid.Row="1" Grid.Column="2"
-                                                       Text="70%"
-                                                       Width="50" TextAlignment="Right" Margin="0 15 0 0" />
-                                        </Grid>
+                                <Button x:Name="LightingEffectsApplyButton" Classes="Primary" Content="Apply effect"
+                                        HorizontalAlignment="Left" Click="LightingEffectsApplyButton_Click" />
+                            </StackPanel>
+                        </Border>
 
-                                        <StackPanel Orientation="Horizontal" Margin="0 15 0 0">
-                                            <Button x:Name="SetManualSpeedButton" Content="Apply Fan Settings"
-                                                    Margin="0 0 10 0" Click="SetManualSpeedButton_OnClick" />
-                                        </StackPanel>
+                        <Border Classes="Card" x:Name="BacklightTimeoutControls">
+                            <StackPanel Spacing="10">
+                                <TextBlock Text="Backlight timeout" Classes="H2" />
+                                <TextBlock Text="Turn keyboard lighting off after 30 seconds of inactivity."
+                                           Classes="Dim" FontSize="12" TextWrapping="Wrap" />
+                                <CheckBox x:Name="BacklightTimeoutCheckBox" Content="Enable timeout"
+                                          Click="BacklightTimeoutCheckBox_Click" />
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
 
-                                        <TextBlock Text="Note: Low fan speeds may result in higher temperatures"
-                                                   Foreground="#FFA500" Margin="0 10 0 0" FontSize="12" />
+                <!-- ========== System ========== -->
+                <ScrollViewer x:Name="PageSystem" IsVisible="False">
+                    <StackPanel Margin="24,4,24,24">
+
+                        <Border Classes="Card" x:Name="LcdOverrideControls">
+                            <StackPanel Spacing="10">
+                                <TextBlock Text="Panel" Classes="H2" />
+                                <TextBlock Text="LCD override reduces panel latency and ghosting at a small battery cost."
+                                           Classes="Dim" FontSize="12" TextWrapping="Wrap" />
+                                <CheckBox x:Name="LcdOverrideCheckBox" Content="Enable LCD override" />
+                            </StackPanel>
+                        </Border>
+
+                        <Border Classes="Card" x:Name="BootSoundControls">
+                            <StackPanel Spacing="10">
+                                <TextBlock Text="Startup" Classes="H2" />
+                                <TextBlock Text="Acer boot animation and startup sound."
+                                           Classes="Dim" FontSize="12" TextWrapping="Wrap" />
+                                <CheckBox x:Name="BootAnimAndSoundCheckBox"
+                                          Content="Enable boot animation and sound" />
+                            </StackPanel>
+                        </Border>
+
+                        <Border Classes="Card">
+                            <StackPanel Spacing="10">
+                                <TextBlock Text="Application behavior" Classes="H2" />
+                                <CheckBox x:Name="CloseToTrayCheckBox" Content="Keep running in the tray when closed" />
+                                <CheckBox x:Name="NotificationsCheckBox" Content="Show in-app notifications" />
+                            </StackPanel>
+                        </Border>
+
+                        <Border Classes="Card">
+                            <StackPanel Spacing="12">
+                                <TextBlock Text="System information" Classes="H2" />
+                                <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto"
+                                      RowSpacing="8" ColumnSpacing="16">
+                                    <TextBlock Grid.Row="0" Text="Model" Classes="Label" Width="120" />
+                                    <TextBlock x:Name="ModelNameText" Grid.Row="0" Grid.Column="1" Text="UNKNOWN"
+                                               Classes="Value" />
+                                    <TextBlock Grid.Row="1" Text="Laptop type" Classes="Label" Width="120" />
+                                    <TextBlock x:Name="LaptopTypeText" Grid.Row="1" Grid.Column="1" Text="UNKNOWN"
+                                               Classes="Value" />
+                                    <TextBlock Grid.Row="2" Text="Operating system" Classes="Label" Width="120" />
+                                    <TextBlock x:Name="OsNameText" Grid.Row="2" Grid.Column="1" Text="UNKNOWN"
+                                               Classes="Value" TextWrapping="Wrap" />
+                                    <TextBlock Grid.Row="3" Text="Kernel" Classes="Label" Width="120" />
+                                    <TextBlock x:Name="KernelText" Grid.Row="3" Grid.Column="1" Text="UNKNOWN"
+                                               Classes="Value" />
+                                    <TextBlock Grid.Row="4" Text="Daemon" Classes="Label" Width="120" />
+                                    <TextBlock x:Name="DaemonVersionText" Grid.Row="4" Grid.Column="1" Text="UNKNOWN"
+                                               Classes="Value" />
+                                    <TextBlock Grid.Row="5" Text="Driver" Classes="Label" Width="120" />
+                                    <TextBlock x:Name="DriverVersionText" Grid.Row="5" Grid.Column="1" Text="UNKNOWN"
+                                               Classes="Value" />
+                                    <TextBlock Grid.Row="6" Text="GUI" Classes="Label" Width="120" />
+                                    <TextBlock x:Name="GuiVersionText" Grid.Row="6" Grid.Column="1" Text="UNKNOWN"
+                                               Classes="Value" />
+                                    <TextBlock Grid.Row="7" Text="Features" Classes="Label" Width="120" />
+                                    <TextBlock x:Name="SupportedFeaturesTextBlock" Grid.Row="7" Grid.Column="1"
+                                               Text="UNKNOWN" Classes="Value" TextWrapping="Wrap" />
+                                </Grid>
+
+                                <WrapPanel Orientation="Horizontal">
+                                    <Button x:Name="UpdatesButton" Classes="Ghost" Content="Check for updates"
+                                            Click="UpdatesButton_OnClick" Margin="0,0,10,0" />
+                                    <Button x:Name="IssuePageButton" Classes="Ghost" Content="Report an issue"
+                                            Click="IssuePageButton_OnClick" Margin="0,0,10,0" />
+                                    <Button x:Name="InternalsManagerButton" Classes="Ghost"
+                                            Content="Internals manager" Click="InternalsMangerWindow_OnClick"
+                                            Margin="0,0,10,0" />
+                                    <Button x:Name="DeveloperModeButton" Content="Developer mode"
+                                            IsVisible="False" Click="DeveloperMode_OnClick" />
+                                </WrapPanel>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+
+                <!-- ========== Diagnostics ========== -->
+                <ScrollViewer x:Name="PageDiagnostics" IsVisible="False">
+                    <StackPanel Margin="24,4,24,24">
+
+                        <Border Classes="Card">
+                            <StackPanel Spacing="12">
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <StackPanel Spacing="2">
+                                        <TextBlock Text="Daemon connection" Classes="H2" />
+                                        <TextBlock x:Name="DiagConnectionText" Text="Unknown" Classes="Dim"
+                                                   FontSize="12" />
                                     </StackPanel>
+                                    <Border x:Name="DiagConnectionChip" Grid.Column="1" Classes="Well" Padding="10,5"
+                                            CornerRadius="999">
+                                        <TextBlock x:Name="DiagConnectionChipText" Text="—" FontSize="11"
+                                                   FontWeight="SemiBold" />
+                                    </Border>
+                                </Grid>
+                                <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="8"
+                                      ColumnSpacing="16">
+                                    <TextBlock Text="Socket" Classes="Label" Width="120" />
+                                    <TextBlock x:Name="DiagSocketText" Grid.Column="1" Text="/var/run/DAMX.sock"
+                                               Classes="Value" />
+                                    <TextBlock Grid.Row="1" Text="Daemon" Classes="Label" Width="120" />
+                                    <TextBlock x:Name="DiagDaemonVersionText" Grid.Row="1" Grid.Column="1"
+                                               Text="UNKNOWN" Classes="Value" />
+                                    <TextBlock Grid.Row="2" Text="Driver" Classes="Label" Width="120" />
+                                    <TextBlock x:Name="DiagDriverVersionText" Grid.Row="2" Grid.Column="1"
+                                               Text="UNKNOWN" Classes="Value" />
+                                    <TextBlock Grid.Row="3" Text="Laptop" Classes="Label" Width="120" />
+                                    <TextBlock x:Name="DiagLaptopText" Grid.Row="3" Grid.Column="1" Text="UNKNOWN"
+                                               Classes="Value" TextWrapping="Wrap" />
+                                </Grid>
+                                <WrapPanel Orientation="Horizontal">
+                                    <Button x:Name="RefreshDiagnosticsButton" Classes="Ghost" Content="Refresh"
+                                            Click="RefreshDiagnosticsButton_OnClick" Margin="0,0,10,0" />
+                                    <Button x:Name="CopyDiagnosticsButton" Classes="Ghost" Content="Copy report"
+                                            Click="CopyDiagnosticsButton_OnClick" Margin="0,0,10,0" />
+                                    <Button x:Name="RestartDaemonButton" Classes="Ghost" Content="Restart daemon"
+                                            Click="RestartDaemonButton_OnClick" Margin="0,0,10,0" />
+                                    <Button x:Name="RestartSuiteButton" Classes="DangerGhost"
+                                            Content="Restart drivers + daemon" Click="RestartSuiteButton_OnClick"
+                                            Margin="0,0,10,0" />
+                                    <Button x:Name="OpenLogsButton" Classes="Ghost" Content="Open full log"
+                                            Click="OpenLogsButton_OnClick" />
+                                </WrapPanel>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Classes="Card">
+                            <StackPanel Spacing="12">
+                                <TextBlock Text="Services" Classes="H2" />
+                                <StackPanel x:Name="DiagServicesPanel" Spacing="8" />
+                            </StackPanel>
+                        </Border>
+
+                        <Border Classes="Card">
+                            <StackPanel Spacing="12">
+                                <TextBlock Text="Nitro / Predator button" Classes="H2" />
+                                <TextBlock Text="The dedicated hardware button can launch DAMX. Detection depends on the installed setup service."
+                                           Classes="Dim" FontSize="12" TextWrapping="Wrap" />
+                                <TextBlock x:Name="NitroButtonStatusText" Text="Checking…" Classes="Value" />
+                                <TextBlock x:Name="NitroButtonDetailText" Classes="Caption" TextWrapping="Wrap" />
+                            </StackPanel>
+                        </Border>
+
+                        <Border Classes="Card">
+                            <StackPanel Spacing="12">
+                                <TextBlock Text="Sensor sources" Classes="H2" />
+                                <StackPanel x:Name="SensorInventoryPanel" Spacing="8" />
+                            </StackPanel>
+                        </Border>
+
+                        <Border Classes="Card">
+                            <StackPanel Spacing="10">
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <TextBlock Text="Daemon log" Classes="H2" />
+                                    <TextBlock Grid.Column="1" Text="/var/log/DAMX_Daemon_Log.log" Classes="Caption"
+                                               VerticalAlignment="Center" />
+                                </Grid>
+                                <TextBox x:Name="DiagnosticsLogTextBox" IsReadOnly="True" AcceptsReturn="True"
+                                         TextWrapping="NoWrap" Height="220" FontSize="11"
+                                         VerticalContentAlignment="Top" />
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+
+                <!-- ========== Compatibility ========== -->
+                <ScrollViewer x:Name="PageCompatibility" IsVisible="False">
+                    <StackPanel Margin="24,4,24,24">
+
+                        <Border Classes="Card">
+                            <StackPanel Spacing="12">
+                                <TextBlock Text="Detected hardware" Classes="H2" />
+                                <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto" RowSpacing="8"
+                                      ColumnSpacing="16">
+                                    <TextBlock Text="Model" Classes="Label" Width="140" />
+                                    <TextBlock x:Name="CompatibilityModelText" Grid.Column="1" Text="UNKNOWN"
+                                               Classes="Value" />
+                                    <TextBlock Grid.Row="1" Text="Laptop type" Classes="Label" Width="140" />
+                                    <TextBlock x:Name="CompatibilityTypeText" Grid.Row="1" Grid.Column="1"
+                                               Text="UNKNOWN" Classes="Value" />
+                                </Grid>
+                                <Border x:Name="CompatibilityStatusChip" Classes="Well" Padding="12,8">
+                                    <TextBlock x:Name="CompatibilityStatusText"
+                                               Text="Checking daemon-detected capabilities…" FontSize="12" />
+                                </Border>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Classes="Card">
+                            <StackPanel Spacing="12">
+                                <StackPanel Spacing="2">
+                                    <TextBlock Text="Feature matrix" Classes="H2" />
+                                    <TextBlock Text="Which DAMX features the daemon reports as supported on this machine."
+                                               Classes="Dim" FontSize="12" TextWrapping="Wrap" />
                                 </StackPanel>
-                            </Border>
-                        </StackPanel>
-                    </ScrollViewer>
-                </TabItem>
+                                <StackPanel x:Name="CompatibilityMatrixPanel" Spacing="8" />
+                            </StackPanel>
+                        </Border>
 
-                <!-- Power Controls Tab -->
-                <TabItem Header="Battery Controls" x:Name="BatteryPanel">
-                    <ScrollViewer>
-                        <StackPanel Margin="10,0,20,0">
-                            <TextBlock Text="Power Controls" Classes="SectionHeader" />
-
-                            <!-- Battery Calibration -->
-                            <Border Classes="Card" x:Name="CalibrationControls">
-                                <StackPanel>
-                                    <TextBlock Text="Battery Calibration" Classes="SubHeader" />
-                                    <TextBlock
-                                        Text="Calibrate your battery to get accurate battery percentage readings"
-                                        Opacity="0.7" TextWrapping="Wrap" Margin="0 0 0 10" />
-
-                                    <Grid ColumnDefinitions="*,Auto" Margin="0 10">
-                                        <StackPanel Grid.Column="0">
-                                            <TextBlock x:Name="CalibrationStatusTextBlock"
-                                                       Text="Status: Not calibrating" FontWeight="SemiBold" />
-                                            <TextBlock
-                                                Text="Battery calibration will fully charge, drain, and recharge your battery."
-                                                TextWrapping="Wrap" Margin="0 5 0 0" Opacity="0.7" />
-                                            <TextBlock Text="Do not unplug AC power during calibration."
-                                                       Foreground="#FFA500" Margin="0 5 0 0" />
-                                        </StackPanel>
-
-                                        <StackPanel Grid.Column="1" Orientation="Vertical">
-                                            <Button x:Name="StartCalibrationButton" Content="Start Calibration"
-                                                    Margin="0 0 0 5" />
-                                            <Button x:Name="StopCalibrationButton" Content="Stop Calibration"
-                                                    IsEnabled="False" Background="#444444" />
-                                        </StackPanel>
-                                    </Grid>
+                        <Border Classes="Card">
+                            <StackPanel Spacing="10">
+                                <TextBlock Text="Advanced overrides" Classes="H2" />
+                                <TextBlock Text="Developer mode reveals controls for features the daemon did not detect. Use with care — forcing unsupported features can behave unpredictably."
+                                           Classes="Dim" FontSize="12" TextWrapping="Wrap" />
+                                <StackPanel Orientation="Horizontal" Spacing="14">
+                                    <CheckBox x:Name="DevModeToggle" Content="Developer mode" />
+                                    <Button x:Name="InternalsManagerFromCompatButton" Classes="Ghost"
+                                            Content="Open internals manager"
+                                            Click="InternalsMangerWindow_OnClick" />
                                 </StackPanel>
-                            </Border>
-
-                            <!-- Charge Limit -->
-                            <Border Classes="Card" x:Name="LimiterControls">
-                                <StackPanel>
-                                    <TextBlock Text="Battery Charge Limit" Classes="SubHeader" />
-                                    <TextBlock Text="Limit maximum battery charge to extend battery lifespan"
-                                               Opacity="0.7" Margin="0 0 0 10" />
-
-                                    <Grid ColumnDefinitions="Auto,*,Auto" Margin="0 10">
-                                        <CheckBox x:Name="BatteryLimitCheckBox" Grid.Column="0"
-                                                  Content="Enable Battery Limit" Margin="0 0 10 0" />
-                                        <TextBlock Grid.Column="2" Text="Limit to 80%" VerticalAlignment="Center" />
-                                    </Grid>
-
-                                    <TextBlock Text="Recommended for laptops that are frequently connected to AC power"
-                                               Opacity="0.7" TextWrapping="Wrap" Margin="0 10 0 0" />
-                                </StackPanel>
-                            </Border>
-
-                            <!-- USB Power Delivery -->
-                            <Border Classes="Card" x:Name="UsbChargingPanel">
-                                <StackPanel>
-                                    <TextBlock Text="USB Power Delivery" Classes="SubHeader" />
-                                    <TextBlock Text="Configure USB charging when laptop is powered off" Opacity="0.7"
-                                               Margin="0 0 0 10" />
-
-                                    <ComboBox x:Name="UsbChargingComboBox" SelectedIndex="2" Width="300"
-                                              HorizontalAlignment="Left" Margin="0 10"
-                                              SelectionChanged="UsbChargingComboBox_OnSelectionChanged">
-                                        <ComboBoxItem Content="Disabled" />
-                                        <ComboBoxItem Content="Until battery reaches 10%" />
-                                        <ComboBoxItem Content="Until battery reaches 20%" />
-                                        <ComboBoxItem Content="Until battery reaches 30%" />
-                                    </ComboBox>
-
-                                </StackPanel>
-                            </Border>
-                        </StackPanel>
-
-                    </ScrollViewer>
-                </TabItem>
-
-                <!-- Keyboard Lighting Tab -->
-                <TabItem Header="Keyboard Lighting" x:Name="KeyboardLightingPanel">
-                    <ScrollViewer>
-                        <StackPanel Margin="10,0,20,0">
-                            <TextBlock Text="Keyboard Lighting" Classes="SectionHeader" />
-                            <TextBlock Text="This Section Requires Testing." Foreground="#FFA500" Margin="0 0 0 10" />
-
-                            <!-- Zone Color Control -->
-
-
-                            <Border Classes="Card" x:Name="ZoneColorControlPanel">
-                                <StackPanel>
-                                    <TextBlock Text="Zone Color Control" Classes="SubHeader" />
-                                    <TextBlock Text="Customize colors for each keyboard zone" Opacity="0.7"
-                                               Margin="0 0 0 10" />
-
-                                    <Grid Margin="0 10">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*" />
-                                            <ColumnDefinition Width="*" />
-                                        </Grid.ColumnDefinitions>
-                                        <Grid.RowDefinitions>
-                                            <RowDefinition Height="Auto" />
-                                            <RowDefinition Height="Auto" />
-                                            <RowDefinition Height="Auto" />
-                                        </Grid.RowDefinitions>
-
-
-                                        <!-- Zone 1 -->
-                                        <Grid Grid.Column="0" Grid.Row="0" Margin="10,10" VerticalAlignment="Center">
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="Auto" />
-                                                <ColumnDefinition Width="*" />
-                                                <ColumnDefinition Width="Auto" />
-                                            </Grid.ColumnDefinitions>
-                                            <StackPanel>
-                                                <TextBlock Text="Zone 1:" VerticalAlignment="Center" Margin="0 0 10 15" />
-                                                <Border x:Name="Zone1Border" Background="#4287f5" Height="30"
-                                                        CornerRadius="3" Margin="0 0 10 15" IsVisible="False" />
-
-                                                <ColorPicker x:Name="Zone1ColorPicker"
-                                                             IsAlphaEnabled="False"
-                                                             IsAlphaVisible="False"
-                                                             Color="#4287f5"
-
-                                                             VerticalAlignment="Center"
-                                                             HorizontalAlignment="Left"
-                                                             Height="50"
-                                                             Width="200" />
-
-                                            </StackPanel>
-                                        </Grid>
-
-                                        <!-- Zone 2 -->
-                                        <Grid Grid.Column="1" Grid.Row="0" Margin="10,10">
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="Auto" />
-                                                <ColumnDefinition Width="*" />
-                                                <ColumnDefinition Width="Auto" />
-                                            </Grid.ColumnDefinitions>
-                                            <StackPanel>
-                                                <TextBlock Text="Zone 2:" VerticalAlignment="Center" Margin="0 0 10 15" />
-                                                <Border x:Name="Zone2Border" Background="#ff5733" Height="30"
-                                                        CornerRadius="3" Margin="0 0 10 15" IsVisible="False" />
-                                                <ColorPicker x:Name="Zone2ColorPicker"
-                                                             IsAlphaEnabled="False"
-                                                             HexInputAlphaPosition="Trailing"
-                                                             Color="#ff5733"
-                                                             VerticalAlignment="Center"
-                                                             HorizontalAlignment="Left"
-                                                             Height="50"
-                                                             Width="200" />
-                                            </StackPanel>
-
-                                        </Grid>
-
-                                        <!-- Zone 3 -->
-                                        <Grid Grid.Column="0" Grid.Row="1" Margin="10,10">
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="Auto" />
-                                                <ColumnDefinition Width="*" />
-                                                <ColumnDefinition Width="Auto" />
-                                            </Grid.ColumnDefinitions>
-                                            <StackPanel>
-                                                <TextBlock Text="Zone 3:" VerticalAlignment="Center" Margin="0 0 10 15" />
-                                                <Border x:Name="Zone3Border" Background="#33ff57" Height="30"
-                                                        CornerRadius="3" Margin="0 0 10 15" IsVisible="False" />
-
-                                                <ColorPicker x:Name="Zone3ColorPicker"
-                                                             IsAlphaEnabled="False"
-                                                             HexInputAlphaPosition="Trailing"
-                                                             Color="#33ff57"
-                                                             VerticalAlignment="Center"
-                                                             HorizontalAlignment="Left"
-                                                             Height="50"
-                                                             Width="200" />
-                                            </StackPanel>
-
-                                        </Grid>
-
-                                        <!-- Zone 4 -->
-                                        <Grid Grid.Column="1" Grid.Row="1" Margin="10,10">
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="Auto" />
-                                                <ColumnDefinition Width="*" />
-                                                <ColumnDefinition Width="Auto" />
-                                            </Grid.ColumnDefinitions>
-                                            <StackPanel>
-                                                <TextBlock Text="Zone 4:" VerticalAlignment="Center" Margin="0 0 10 15" />
-                                                <ColorPicker x:Name="Zone4ColorPicker"
-                                                             IsAlphaEnabled="False"
-                                                             HexInputAlphaPosition="Trailing"
-                                                             Color="#FFFF01"
-                                                             VerticalAlignment="Top"
-                                                             HorizontalAlignment="Left"
-                                                             Height="50"
-                                                             Width="200" />
-                                            </StackPanel>
-
-                                        </Grid>
-
-                                        <!-- Brightness -->
-                                        <Grid Grid.ColumnSpan="2" Grid.Row="2">
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="Auto" />
-                                                <ColumnDefinition Width="*" />
-                                                <ColumnDefinition Width="Auto" />
-                                            </Grid.ColumnDefinitions>
-                                            <TextBlock Grid.Column="0" Text="Brightness:" VerticalAlignment="Center"
-                                                       Margin="0 0 10 0" />
-                                            <Slider x:Name="KeyBrightnessSlider" Grid.Column="1" Value="100"
-                                                    Margin="0 0 10 0" />
-                                            <TextBlock x:Name="KeyBrightnessText" Grid.Column="2" Text="100%"
-                                                       VerticalAlignment="Center" />
-                                        </Grid>
-                                    </Grid>
-
-
-                                    <Button x:Name="ApplyKeyboardColorsButton" Content="Apply Zone Colors"
-                                            Margin="0 15 0 0" />
-                                </StackPanel>
-                            </Border>
-
-                            <!-- Lighting Effects -->
-                            <Border Classes="Card" x:Name="KeyboardEffectsPanel">
-                                <StackPanel>
-                                    <TextBlock Text="Lighting Effects" Classes="SubHeader" />
-                                    <TextBlock Text="Choose dynamic lighting effects for your keyboard" Opacity="0.7"
-                                               Margin="0 0 0 10" />
-
-                                    <ComboBox x:Name="LightingModeComboBox" SelectedIndex="0" Width="200"
-                                              HorizontalAlignment="Left" Margin="0 10">
-                                        <ComboBoxItem Content="Static Mode" />
-                                        <ComboBoxItem Content="Breathing Mode" />
-                                        <ComboBoxItem Content="Neon Mode" />
-                                        <ComboBoxItem Content="Wave Mode" />
-                                        <ComboBoxItem Content="Shifting Mode" />
-                                        <ComboBoxItem Content="Zoom Mode" />
-                                        <ComboBoxItem Content="Meteor Mode" />
-                                        <ComboBoxItem Content="Twinkling Mode" />
-                                    </ComboBox>
-
-                                    <Grid ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto,Auto,Auto" Margin="0 15">
-                                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Speed:"
-                                                   VerticalAlignment="Center" Width="80" />
-                                        <Slider x:Name="LightingSpeedSlider" Grid.Row="0" Grid.Column="1" Value="5"
-                                                Maximum="9" Minimum="0" IsSnapToTickEnabled="True" TickFrequency="1" />
-                                        <TextBlock x:Name="LightSpeedTextBlock" Grid.Row="0" Grid.Column="2" Text="5"
-                                                   Width="30" TextAlignment="Right" />
-
-                                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Color:"
-                                                   VerticalAlignment="Center" Width="80" Margin="0 15 0 0" />
-                                        <ColorPicker x:Name="LightEffectColorPicker"
-                                                     IsAlphaEnabled="False"
-                                                     HexInputAlphaPosition="Trailing"
-                                                     Color="#FFFF01"
-                                                     VerticalAlignment="Top"
-                                                     HorizontalAlignment="Left"
-                                                     Height="50"
-                                                     Grid.Row="1"
-                                                     Grid.Column="1"
-                                                     Width="200" />
-
-                                        <TextBlock Grid.Row="2" Grid.Column="0" Text="Direction:"
-                                                   VerticalAlignment="Center" Width="80" Margin="0 15 0 0" />
-                                        <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Horizontal"
-                                                    Margin="0 15 0 0">
-                                            <RadioButton x:Name="LeftToRightRadioButton" GroupName="DirectionGroup"
-                                                         IsChecked="True" Margin="0 0 15 0">
-                                                <StackPanel>
-                                                    <material:MaterialIcon Kind="ArrowRight" Width="48" Height="48" />
-                                                    <TextBlock Text="Left To Right" HorizontalAlignment="Center" />
-                                                </StackPanel>
-                                            </RadioButton>
-                                            <RadioButton x:Name="RightToLeftRadioButton" GroupName="DirectionGroup">
-                                                <StackPanel>
-                                                    <material:MaterialIcon Kind="ArrowLeft" Width="48" Height="48" />
-                                                    <TextBlock Text="Right to Left" HorizontalAlignment="Center" />
-                                                </StackPanel>
-                                            </RadioButton>
-                                        </StackPanel>
-                                    </Grid>
-
-                                    <Button x:Name="LightingEffectsApplyButton" Content="Apply Effect" Margin="0 5 0 0" />
-                                </StackPanel>
-                            </Border>
-
-                            <!-- Backlight Timeout -->
-                            <Border Classes="Card" x:Name="BacklightTimeoutControls">
-                                <StackPanel>
-                                    <TextBlock Text="Backlight Timeout" Classes="SubHeader" />
-                                    <TextBlock
-                                        Text="Automatically turn off keyboard lighting after period of inactivity"
-                                        Opacity="0.7" Margin="0 0 0 10" />
-
-                                    <CheckBox x:Name="BacklightTimeoutCheckBox"
-                                              Content="Enable backlight timeout (30 seconds)" IsChecked="True"
-                                              Margin="0 10" />
-                                </StackPanel>
-                            </Border>
-
-                        </StackPanel>
-                    </ScrollViewer>
-                </TabItem>
-
-                <!-- System Settings Tab -->
-                <TabItem Header="System Settings" x:Name="SystemSettingsPanel">
-                    <ScrollViewer>
-                        <StackPanel Margin="10,0,20,0">
-                            <TextBlock Text="System Settings" Classes="SectionHeader" />
-
-                            <!-- LCD Override -->
-                            <Border Classes="Card" x:Name="LcdOverrideControls">
-                                <StackPanel>
-                                    <TextBlock Text="LCD Override" Classes="SubHeader" />
-                                    <TextBlock Text="Reduce LCD latency and minimize ghosting" Opacity="0.7"
-                                               Margin="0 0 0 10" />
-
-                                    <CheckBox x:Name="LcdOverrideCheckBox" Content="Enable LCD Override"
-                                              IsChecked="True" Margin="0 10" />
-                                    <TextBlock Text="Note: May increase battery consumption" Foreground="#FFA500"
-                                               FontSize="12" Margin="0 5" />
-                                </StackPanel>
-                            </Border>
-
-                            <!-- Boot Sound and Animation -->
-                            <Border Classes="Card" x:Name="BootSoundControls">
-                                <StackPanel>
-                                    <TextBlock Text="Boot Sound and Animation" Classes="SubHeader" />
-                                    <TextBlock Text="Enable or disable custom boot animation and sound" Opacity="0.7"
-                                               Margin="0 0 0 10" />
-
-                                    <CheckBox x:Name="BootAnimAndSoundCheckBox"
-                                              Content="Enable boot animation and sound" IsChecked="False" Margin="0 10" />
-                                </StackPanel>
-                            </Border>
-
-                            <!-- System Information -->
-                            <Border Classes="Card">
-                                <StackPanel>
-                                    <TextBlock Text="System Information" Classes="SubHeader" />
-
-                                    <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto"
-                                          Margin="0 10">
-                                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Model:" FontWeight="SemiBold"
-                                                   Width="120" Margin="0 10 0 0" />
-                                        <TextBlock x:Name="ModelNameText" Grid.Row="0" Grid.Column="1" Text="UNKNOWN"
-                                                   Margin="5 10 0 0" />
-
-                                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Laptop Type:"
-                                                   FontWeight="SemiBold" Width="120" Margin="0 10 0 0" />
-                                        <TextBlock x:Name="LaptopTypeText" Grid.Row="1" Grid.Column="1" Text="UNKNOWN"
-                                                   Margin="5 10 0 0" />
-
-                                        <TextBlock Grid.Row="2" Grid.Column="0" Text="Features:" FontWeight="SemiBold"
-                                                   Width="120" Margin="0 10 0 0" />
-                                        <TextBlock x:Name="SupportedFeaturesTextBlock" Grid.Row="2" Grid.Column="1"
-                                                   Text="UNKNOWN" Margin="5 10 0 0" TextWrapping="Wrap" />
-
-                                        <TextBlock Grid.Row="5" Grid.Column="0" Text="Project Version:"
-                                                   FontWeight="SemiBold" Width="120" Margin="0 10 0 0" />
-                                        <TextBlock x:Name="ProjectVersionText" Grid.Row="5" Grid.Column="1"
-                                                   Text="UNKNOWN" Margin="5 10 0 0" />
-
-
-                                        <TextBlock Grid.Row="3" Grid.Column="0" Text="Daemon Version:"
-                                                   FontWeight="SemiBold" Width="120" Margin="0 10 0 0" />
-                                        <TextBlock x:Name="DaemonVersionText" Grid.Row="3" Grid.Column="1"
-                                                   Text="UNKNOWN" Margin="5 10 0 0" />
-
-                                        <TextBlock Grid.Row="4" Grid.Column="0" Text="Driver Version:"
-                                                   FontWeight="SemiBold" Width="120" Margin="0 10 0 0" />
-                                        <TextBlock x:Name="DriverVersionText" Grid.Row="4" Grid.Column="1"
-                                                   Text="UNKNOWN" Margin="5 10 0 0" />
-
-                                    </Grid>
-
-                                    <StackPanel Orientation="Horizontal" Spacing="12" HorizontalAlignment="Stretch">
-                                        <Button x:Name="UpdatesButton" Content="Check for Updates" Margin="0 15 0 0"
-                                                Click="UpdatesButton_OnClick" />
-                                        <Button x:Name="DeveloperModeButton" Content="Developer Mode" Margin="0 15 0 0"
-                                                IsVisible="False"
-                                                Click="DeveloperMode_OnClick" />
-                                        <Button x:Name="IssuePageButton" Content="Issue/Feedback" Margin="0 15 0 0"
-                                                Click="IssuePageButton_OnClick" />
-                                        <Button x:Name="InternalsManagerButton" Content="Internals Manager"
-                                                Margin="0 15 0 0"
-                                                Click="InternalsMangerWindow_OnClick" />
-
-
-                                    </StackPanel>
-                                </StackPanel>
-                            </Border>
-                        </StackPanel>
-                    </ScrollViewer>
-                </TabItem>
-            </TabControl>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+            </Grid>
         </Grid>
 
-        <!-- Overlay Grid (on separate layer) -->
-        <Grid x:Name="DaemonErrorGrid" Panel.ZIndex="100" Background="Transparent" IsHitTestVisible="True"
-              IsVisible="True">
-            <Border
-                BorderBrush="#333236"
-                BorderThickness="3"
-                CornerRadius="20"
-                Padding="30"
-                Width="400"
-                Height="280"
-                HorizontalAlignment="Center"
-                VerticalAlignment="Center">
-                <Border.Background>
-                    <LinearGradientBrush StartPoint="0%,0%" EndPoint="0%, 100%">
-                        <GradientStop Offset="0" Color="#18181b" />
-                        <GradientStop Offset="1" Color="#242429" />
-                    </LinearGradientBrush>
-                </Border.Background>
+        <!-- ================= Toasts ================= -->
+        <StackPanel x:Name="ToastHost" Grid.ColumnSpan="2" Panel.ZIndex="60" Width="360"
+                    HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,22,22"
+                    IsHitTestVisible="True" />
 
-                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="20">
-                    <!-- Material Icon -->
-                    <material:MaterialIcon Kind="Connection" Foreground="#FF5A5F" Width="48" Height="48"
-                                           HorizontalAlignment="Center" />
-                    <StackPanel Spacing="0">
-                        <!-- Message -->
-                        <TextBlock Text="Daemon not connected"
-                                   Foreground="White"
-                                   FontSize="18"
-                                   HorizontalAlignment="Center"
-                                   Classes="SectionHeader"
-                                   Margin="0,12,0,0" />
-
-                        <TextBlock
-                            Text="Daemon may be initializing. Please wait a minute. If issues persists, check logs."
-                            Foreground="White"
-                            FontSize="13"
-                            TextWrapping="Wrap"
-                            HorizontalAlignment="Center" />
+        <!-- ================= Daemon overlay ================= -->
+        <Grid x:Name="DaemonErrorGrid" Grid.ColumnSpan="2" Panel.ZIndex="100" Background="#CC0B0B0F"
+              IsVisible="False">
+            <Border BorderBrush="{StaticResource DmxBorderStrong}" BorderThickness="1"
+                    CornerRadius="16" Padding="28" Width="420"
+                    Background="{StaticResource DmxSurface}"
+                    HorizontalAlignment="Center" VerticalAlignment="Center">
+                <StackPanel HorizontalAlignment="Center" Spacing="16">
+                    <material:MaterialIcon Kind="Connection" Foreground="{StaticResource DmxDanger}" Width="44"
+                                           Height="44" HorizontalAlignment="Center" />
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="Daemon not connected" Classes="H1" HorizontalAlignment="Center" />
+                        <TextBlock Text="The DAMX daemon may still be starting. Wait a moment, then retry. If this persists, check the daemon log in Diagnostics."
+                                   Classes="Muted" FontSize="12" TextWrapping="Wrap" TextAlignment="Center" />
                     </StackPanel>
-
-                    <!-- Retry Button -->
-                    <Button Content="Retry"
-                            Width="100"
-                            HorizontalAlignment="Center"
-                            HorizontalContentAlignment="Center"
-                            Click="RetryConnectionButton_OnClick" />
+                    <Button Content="Retry connection" Classes="Primary" Width="160"
+                            HorizontalContentAlignment="Center" Click="RetryConnectionButton_OnClick" />
                 </StackPanel>
             </Border>
         </Grid>

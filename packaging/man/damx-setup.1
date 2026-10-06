@@ -1,0 +1,49 @@
+.TH DAMX-SETUP 1 "2026-10-07" "DAMX 1.1.0" "User Commands"
+.SH NAME
+damx-setup \- post-install helper for Div Acer Manager Max
+.SH SYNOPSIS
+.B damx-setup
+.RI [ option ]
+.SH DESCRIPTION
+.B damx-setup
+inspects the DAMX installation and performs optional post-install steps that
+require root privileges.
+.SH OPTIONS
+.TP
+.B --status
+Print the state of the daemon service, the Nitro/PredatorSense button service
+and the Linuwu-Sense kernel drivers. This is the default when no option is
+given.
+.TP
+.B --drivers
+Clone (or update) the Linuwu-Sense driver sources, build them against the
+running kernel and install the kernel modules. Requires kernel headers, a C
+compiler and git. Secure Boot systems additionally require signed modules.
+.TP
+.B --nitro
+Configure the Nitro/PredatorSense hardware button so it launches DAMX for the
+current desktop user, and enable the
+.I nitro-key-detection.service
+unit. Requires the
+.B evtest
+package.
+.TP
+.B --disable-nitro
+Disable and remove the Nitro button configuration.
+.TP
+.BR \-h ", " \-\-help
+Show usage information.
+.SH ENVIRONMENT
+.TP
+.B DAMX_TARGET_USER
+Desktop user that should be used for the Nitro button launcher instead of the
+auto-detected user.
+.TP
+.B DAMX_DRIVER_REPO
+Git URL used by
+.B \-\-drivers
+(default: the Div-Linuwu-Sense repository on GitHub).
+.SH SEE ALSO
+.BR damx (1)
+.SH AUTHOR
+PXDiv and contributors.

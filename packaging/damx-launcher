@@ -1,0 +1,3 @@
+#!/bin/sh
+# DAMX launcher (kept as /usr/bin/DAMX for compatibility with the installer scripts).
+exec /opt/damx/gui/DivAcerManagerMax "$@"

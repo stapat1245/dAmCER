@@ -1,0 +1,175 @@
+#!/usr/bin/env bash
+# DAMX post-install helper.
+#
+#   damx-setup                 show system/driver/service status
+#   damx-setup --drivers       build and install the Linuwu-Sense kernel drivers
+#   damx-setup --nitro         enable the Nitro/PredatorSense launcher button
+#   damx-setup --disable-nitro disable the Nitro/PredatorSense launcher button
+#
+# The kernel drivers need kernel headers and a compiler; the Nitro button needs
+# evtest. Run as root (sudo).
+set -euo pipefail
+
+DRIVER_REPO="${DAMX_DRIVER_REPO:-https://github.com/PXDiv/Div-Linuwu-Sense}"
+DRIVER_DIR="${DAMX_DRIVER_DIR:-/usr/src/damx-linuwu-sense}"
+NITRO_UNIT="nitro-key-detection.service"
+DAEMON_UNIT="damx-daemon.service"
+NITRO_DROPIN_DIR="/etc/systemd/system/${NITRO_UNIT}.d"
+
+usage() {
+    sed -n '2,10p' "$0" | sed 's/^# \{0,1\}//'
+}
+
+need_root() {
+    if [ "$(id -u)" -ne 0 ]; then
+        echo "error: run as root: sudo damx-setup $*" >&2
+        exit 1
+    fi
+}
+
+service_state() {
+    if systemctl is-active --quiet "$1" 2>/dev/null; then
+        echo "running"
+    elif systemctl is-enabled --quiet "$1" 2>/dev/null; then
+        echo "enabled (stopped)"
+    else
+        echo "not configured"
+    fi
+}
+
+show_status() {
+    echo "== DAMX status =="
+    printf 'daemon service : %s\n' "$(service_state "$DAEMON_UNIT")"
+    printf 'nitro button   : %s\n' "$(service_state "$NITRO_UNIT")"
+
+    if lsmod 2>/dev/null | grep -qE '^linuwu_sense|^acer_wmi'; then
+        echo "kernel driver  : loaded"
+    else
+        echo "kernel driver  : not loaded (run: sudo damx-setup --drivers)"
+    fi
+
+    if ls /sys/module/linuwu_sense >/dev/null 2>&1; then
+        echo "linuwu module  : present"
+    fi
+
+    command -v evtest >/dev/null 2>&1 \
+        && echo "evtest         : installed" \
+        || echo "evtest         : missing (sudo apt install evtest)"
+    command -v mokutil >/dev/null 2>&1 || true
+
+    if [ -d "/sys/firmware/efi" ] && command -v mokutil >/dev/null 2>&1; then
+        if mokutil --sb-state 2>/dev/null | grep -qi enabled; then
+            echo "secure boot    : ENABLED - driver modules must be signed"
+        fi
+    fi
+}
+
+install_drivers() {
+    need_root "$@"
+
+    local kver build_dir make_args=()
+    kver="$(uname -r)"
+    build_dir="/lib/modules/${kver}/build"
+
+    local missing=()
+    command -v git >/dev/null 2>&1 || missing+=(git)
+    command -v make >/dev/null 2>&1 || missing+=(make)
+    command -v gcc >/dev/null 2>&1 || missing+=(gcc)
+
+    if [ ! -d "$build_dir" ]; then
+        echo "Kernel headers for ${kver} are missing."
+        echo "Install them first, e.g.:"
+        echo "  Ubuntu/Debian : sudo apt install linux-headers-${kver}"
+        echo "  Fedora        : sudo dnf install kernel-devel"
+        echo "  Arch          : sudo pacman -S linux-headers"
+        exit 1
+    fi
+
+    if [ "${#missing[@]}" -gt 0 ]; then
+        echo "Missing build tools: ${missing[*]}"
+        echo "  Ubuntu/Debian : sudo apt install ${missing[*]}"
+        exit 1
+    fi
+
+    if [ -f "/boot/config-${kver}" ] && grep -q '^CONFIG_CC_IS_CLANG=y' "/boot/config-${kver}"; then
+        make_args=(LLVM=1 CC=clang)
+        command -v clang >/dev/null 2>&1 || {
+            echo "This kernel is LLVM-built; install clang (sudo apt install clang) and retry."
+            exit 1
+        }
+    fi
+
+    if [ -d "$DRIVER_DIR/.git" ]; then
+        echo "Updating driver source in $DRIVER_DIR ..."
+        git -C "$DRIVER_DIR" pull --ff-only
+    else
+        echo "Cloning $DRIVER_REPO ..."
+        rm -rf "$DRIVER_DIR"
+        git clone --depth 1 "$DRIVER_REPO" "$DRIVER_DIR"
+    fi
+
+    echo "Building Linuwu-Sense driver ..."
+    make -C "$DRIVER_DIR" clean "${make_args[@]}" || true
+    make -C "$DRIVER_DIR" "${make_args[@]}"
+    make -C "$DRIVER_DIR" install "${make_args[@]}"
+    depmod -a || true
+
+    if [ -d "/sys/firmware/efi" ] && command -v mokutil >/dev/null 2>&1 &&
+       mokutil --sb-state 2>/dev/null | grep -qi enabled; then
+        echo
+        echo "WARNING: Secure Boot is enabled. Unsigned modules will not load."
+        echo "Re-run the full DAMX installer to sign the module, or sign it manually"
+        echo "and enroll the key with mokutil."
+    fi
+
+    modprobe linuwu_sense 2>/dev/null || true
+    systemctl restart "$DAEMON_UNIT" 2>/dev/null || true
+    echo "Drivers installed."
+}
+
+setup_nitro() {
+    need_root "$@"
+
+    command -v evtest >/dev/null 2>&1 || {
+        echo "evtest is required for the button monitor."
+        echo "  sudo apt install evtest"
+    }
+
+    local user="${DAMX_TARGET_USER:-${SUDO_USER:-}}"
+    if [ -z "$user" ] || [ "$user" = "root" ] || ! id -u "$user" >/dev/null 2>&1; then
+        user="$(loginctl list-sessions --no-legend 2>/dev/null | awk '$3 != "root" { print $3; exit }')" || true
+    fi
+    if [ -z "$user" ] || ! id -u "$user" >/dev/null 2>&1; then
+        echo "error: could not determine the desktop user. Set DAMX_TARGET_USER=<user> and retry." >&2
+        exit 1
+    fi
+
+    install -d "$(dirname "$NITRO_DROPIN_DIR")"
+    install -d "$NITRO_DROPIN_DIR"
+    cat > "$NITRO_DROPIN_DIR/10-target-user.conf" <<EOF
+[Service]
+Environment=DAMX_TARGET_USER=$user
+EOF
+
+    systemctl daemon-reload
+    systemctl enable --now "$NITRO_UNIT"
+    echo "Nitro/PredatorSense button enabled for user: $user"
+    echo "Logs: journalctl -u $NITRO_UNIT -f"
+}
+
+disable_nitro() {
+    need_root "$@"
+    systemctl disable --now "$NITRO_UNIT" 2>/dev/null || true
+    rm -rf "$NITRO_DROPIN_DIR"
+    systemctl daemon-reload 2>/dev/null || true
+    echo "Nitro/PredatorSense button disabled."
+}
+
+case "${1:---status}" in
+    --status|status|"") show_status ;;
+    --drivers|drivers) install_drivers "${@:2}" ;;
+    --nitro|nitro) setup_nitro ;;
+    --disable-nitro) disable_nitro ;;
+    -h|--help|help) usage ;;
+    *) echo "unknown option: $1" >&2; usage; exit 2 ;;
+esac

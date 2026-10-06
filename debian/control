@@ -1,0 +1,27 @@
+Source: damx
+Section: utils
+Priority: optional
+Maintainer: PXDiv <pxdiv@users.noreply.github.com>
+Build-Depends: debhelper-compat (= 13)
+Standards-Version: 4.6.2
+Homepage: https://github.com/PXDiv/Div-Acer-Manager-Max
+Vcs-Git: https://github.com/PXDiv/Div-Acer-Manager-Max.git
+Vcs-Browser: https://github.com/PXDiv/Div-Acer-Manager-Max
+
+Package: damx
+Architecture: amd64
+Depends: ${misc:Depends}, python3 (>= 3.10), libc6 (>= 2.35), libgcc-s1, libstdc++6, zlib1g,
+ libssl3t64 | libssl3, libicu74 | libicu76 | libicu72 | libicu70,
+ libx11-6, libxext6, libxrandr2, libxi6, libxcursor1, libxfixes3, libxrender1,
+ libxkbcommon0, libwayland-client0, libfontconfig1, libfreetype6, libharfbuzz0b,
+ libglib2.0-0t64 | libglib2.0-0, libgl1, libegl1, libdbus-1-3
+Recommends: evtest, lm-sensors
+Suggests: git, clang, linux-headers-generic
+Description: Div Acer Manager Max for Acer laptops
+ Replicates and extends Acer NitroSense / PredatorSense on Linux:
+ performance profiles, fan control, battery charge limiting and calibration,
+ keyboard backlight control, LCD override and live hardware telemetry.
+ .
+ The graphical interface talks to the DAMX daemon over a local Unix socket.
+ The Linuwu-Sense kernel drivers are installed separately with
+ "sudo damx-setup --drivers" (or the standalone DAMX installer).

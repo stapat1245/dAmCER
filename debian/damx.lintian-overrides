@@ -1,0 +1,11 @@
+# DAMX intentionally uses /opt/damx to stay compatible with the layout created
+# by the standalone installer and the Nitro button helper.
+damx: dir-or-file-in-opt [opt/damx/*]
+
+# Self-contained .NET publish bundles its own copies of these libraries and
+# deliberately ships the runtime/Skia native libraries unstripped.
+damx: embedded-library
+damx: unstripped-binary-or-object
+
+# Maintainer scripts guard every systemctl call with /run/systemd/system.
+damx: maintainer-script-calls-systemctl

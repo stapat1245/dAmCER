@@ -1,0 +1,54 @@
+name: Debian package
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  deb:
+    name: Build .deb + apt repository
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "9.0.x"
+
+      - name: Install packaging tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y debhelper devscripts fakeroot
+
+      - name: Build .deb
+        run: ./packaging/build-deb.sh
+
+      - name: Build apt repository
+        run: ./packaging/make-apt-repo.sh
+
+      - name: Upload .deb
+        uses: actions/upload-artifact@v4
+        with:
+          name: damx-deb
+          path: dist/*.deb
+
+      - name: Upload apt repository
+        uses: actions/upload-artifact@v4
+        with:
+          name: damx-apt-repo
+          path: dist/apt/**
+
+      - name: Attach .deb to release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/*.deb
+            dist/apt/dists/**/Release

@@ -47,12 +47,19 @@ public partial class InternalsManager : Window
 
     public void ReinitializeDamxGUI()
     {
-        _mainWindow.InitializeAsync();
+        _ = _mainWindow.InitializeAsync();
     }
 
     private void DaemonLogsButton_OnClick(object? sender, RoutedEventArgs e)
     {
-        Process.Start("xdg-open", logPath);
+        try
+        {
+            Process.Start("xdg-open", logPath);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Could not open log: {ex.Message}");
+        }
     }
 
     private async void RestartSuiteButton_OnClick(object? sender, RoutedEventArgs e)

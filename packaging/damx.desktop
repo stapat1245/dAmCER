@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Name=DAMX
+GenericName=Acer Laptop Manager
+Comment=Div Acer Manager Max - performance, cooling, battery and RGB control for Acer laptops
+Exec=/opt/damx/gui/DivAcerManagerMax
+Icon=damx
+Terminal=false
+Categories=System;Utility;HardwareSettings;
+Keywords=acer;nitro;predator;laptop;fan;battery;rgb;thermal;
+StartupNotify=true
+StartupWMClass=DivAcerManagerMax

@@ -1,0 +1,16 @@
+[Unit]
+Description=DAMX Daemon for Acer laptops
+Documentation=https://github.com/PXDiv/Div-Acer-Manager-Max
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/opt/damx/daemon/DAMX-Daemon.py
+Restart=on-failure
+RestartSec=5
+User=root
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

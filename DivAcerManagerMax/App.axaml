@@ -1,23 +1,53 @@
 <Application xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:material="using:Material.Icons.Avalonia"
              x:Class="DivAcerManagerMax.App"
              RequestedThemeVariant="Dark">
-    <!-- "Default" ThemeVariant follows system theme variant. "Dark" or "Light" are other available options. -->
 
     <Application.Resources>
-        <!-- Oxanium Regular -->
+        <!-- ============================= -->
+        <!-- Design tokens (DAMX UI system) -->
+        <!-- ============================= -->
+        <Color x:Key="SystemAccentColor">#3D9BF7</Color>
+        <Color x:Key="SystemAccentColorLight1">#5AACFF</Color>
+        <Color x:Key="SystemAccentColorLight2">#7CC0FF</Color>
+        <Color x:Key="SystemAccentColorLight3">#A5D4FF</Color>
+        <Color x:Key="SystemAccentColorDark1">#2C86DD</Color>
+        <Color x:Key="SystemAccentColorDark2">#1F6DB8</Color>
+        <Color x:Key="SystemAccentColorDark3">#145491</Color>
+
+        <!-- Fonts -->
         <FontFamily x:Key="OxaniumFont">avares://DivAcerManagerMax/Assets/Fonts/Oxanium.ttf#Oxanium</FontFamily>
-
-        <!-- Oxanium Bold (same internal name) -->
         <FontFamily x:Key="OxaniumBoldFont">avares://DivAcerManagerMax/Assets/Fonts/Oxanium-Bold.ttf#Oxanium</FontFamily>
-
-        <!-- Open Sans Regular -->
         <FontFamily x:Key="OpenSansFont">avares://DivAcerManagerMax/Assets/Fonts/OpenSans.ttf#Open Sans</FontFamily>
-
-        <!-- Open Sans SemiBold -->
         <FontFamily x:Key="OpenSansSemiBoldFont">avares://DivAcerManagerMax/Assets/Fonts/OpenSans-SemiBold.ttf#Open Sans SemiBold</FontFamily>
 
+        <!-- Surfaces -->
+        <SolidColorBrush x:Key="DmxBg" Color="#0B0B0F" />
+        <SolidColorBrush x:Key="DmxSurface" Color="#141419" />
+        <SolidColorBrush x:Key="DmxSurfaceAlt" Color="#18181F" />
+        <SolidColorBrush x:Key="DmxSurfaceHover" Color="#20202A" />
+        <SolidColorBrush x:Key="DmxWell" Color="#0F0F14" />
+        <SolidColorBrush x:Key="DmxBorder" Color="#24242E" />
+        <SolidColorBrush x:Key="DmxBorderStrong" Color="#33333F" />
 
+        <!-- Text -->
+        <SolidColorBrush x:Key="DmxText" Color="#F3F3F6" />
+        <SolidColorBrush x:Key="DmxTextSecondary" Color="#A7A7B4" />
+        <SolidColorBrush x:Key="DmxTextMuted" Color="#6C6C79" />
+
+        <!-- Accent + semantic -->
+        <SolidColorBrush x:Key="DmxAccent" Color="#3D9BF7" />
+        <SolidColorBrush x:Key="DmxAccentHover" Color="#5AACFF" />
+        <SolidColorBrush x:Key="DmxAccentPressed" Color="#2C86DD" />
+        <SolidColorBrush x:Key="DmxAccentSoft" Color="#16283D" />
+        <SolidColorBrush x:Key="DmxOnAccent" Color="#06121E" />
+        <SolidColorBrush x:Key="DmxSuccess" Color="#38C793" />
+        <SolidColorBrush x:Key="DmxSuccessSoft" Color="#12271F" />
+        <SolidColorBrush x:Key="DmxWarning" Color="#E9A83C" />
+        <SolidColorBrush x:Key="DmxWarningSoft" Color="#2A2113" />
+        <SolidColorBrush x:Key="DmxDanger" Color="#F0595E" />
+        <SolidColorBrush x:Key="DmxDangerSoft" Color="#2A1416" />
     </Application.Resources>
 
     <Application.Styles>
@@ -25,233 +55,363 @@
         <StyleInclude Source="avares://Material.Icons.Avalonia/MaterialIconStyles.axaml" />
         <StyleInclude Source="avares://Avalonia.Controls.ColorPicker/Themes/Fluent/Fluent.xaml" />
 
-    </Application.Styles>
-
-    <Application.Styles>
-        <!-- Base Styles -->
-        <Style Selector="TabItem">
-            <Setter Property="FontSize" Value="18" />
-            <Setter Property="FontFamily" Value="{StaticResource OxaniumFont}" />
-            <Setter Property="Padding" Value="10,0" />
-            <Setter Property="Foreground" Value="#eff9ff" />
-        </Style>
-
-        <Style Selector="TabControl /template/ WrapPanel">
-            <Setter Property="HorizontalAlignment" Value="Center" />
-            <Setter Property="VerticalAlignment" Value="Top" />
-
-        </Style>
-
-        <Style Selector="TextBlock.SectionHeader">
-            <Setter Property="FontSize" Value="20" />
-            <Setter Property="FontFamily" Value="{StaticResource OxaniumBoldFont}" />
-            <Setter Property="FontWeight" Value="Bold" />
-            <Setter Property="Margin" Value="0 15 0 10" />
-            <Setter Property="Foreground" Value="#eff9ff" />
-            <Setter Property="HorizontalAlignment" Value="Left" />
-        </Style>
-
-        <Style Selector="TextBlock.SubHeader">
-            <Setter Property="FontFamily" Value="{StaticResource OxaniumFont}" />
-            <Setter Property="FontSize" Value="16" />
-            <Setter Property="FontWeight" Value="SemiBold" />
-            <Setter Property="Margin" Value="0 10 0 5" />
+        <!-- ============ Typography ============ -->
+        <Style Selector="Window">
+            <Setter Property="FontFamily" Value="{StaticResource OpenSansFont}" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="Foreground" Value="{StaticResource DmxText}" />
+            <Setter Property="Background" Value="{StaticResource DmxBg}" />
         </Style>
 
         <Style Selector="TextBlock">
-            <Setter Property="FontSize" Value="14" />
             <Setter Property="FontFamily" Value="{StaticResource OpenSansFont}" />
-            <Setter Property="Margin" Value="0 10 0 5" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="Foreground" Value="{StaticResource DmxText}" />
         </Style>
 
+        <Style Selector="TextBlock.Display">
+            <Setter Property="FontFamily" Value="{StaticResource OxaniumBoldFont}" />
+            <Setter Property="FontSize" Value="28" />
+            <Setter Property="Foreground" Value="{StaticResource DmxText}" />
+        </Style>
+
+        <Style Selector="TextBlock.Metric">
+            <Setter Property="FontFamily" Value="{StaticResource OxaniumBoldFont}" />
+            <Setter Property="FontSize" Value="24" />
+            <Setter Property="Foreground" Value="{StaticResource DmxText}" />
+        </Style>
+
+        <Style Selector="TextBlock.MetricSmall">
+            <Setter Property="FontFamily" Value="{StaticResource OxaniumBoldFont}" />
+            <Setter Property="FontSize" Value="17" />
+            <Setter Property="Foreground" Value="{StaticResource DmxText}" />
+        </Style>
+
+        <Style Selector="TextBlock.H1">
+            <Setter Property="FontFamily" Value="{StaticResource OxaniumBoldFont}" />
+            <Setter Property="FontSize" Value="19" />
+            <Setter Property="Foreground" Value="{StaticResource DmxText}" />
+        </Style>
+
+        <Style Selector="TextBlock.H2">
+            <Setter Property="FontFamily" Value="{StaticResource OxaniumBoldFont}" />
+            <Setter Property="FontSize" Value="15" />
+            <Setter Property="Foreground" Value="{StaticResource DmxText}" />
+        </Style>
+
+        <Style Selector="TextBlock.Muted">
+            <Setter Property="Foreground" Value="{StaticResource DmxTextSecondary}" />
+        </Style>
+
+        <Style Selector="TextBlock.Dim">
+            <Setter Property="Foreground" Value="{StaticResource DmxTextMuted}" />
+        </Style>
+
+        <Style Selector="TextBlock.Caption">
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="Foreground" Value="{StaticResource DmxTextMuted}" />
+        </Style>
+
+        <Style Selector="TextBlock.Label">
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Foreground" Value="{StaticResource DmxTextSecondary}" />
+        </Style>
+
+        <Style Selector="TextBlock.Value">
+            <Setter Property="FontFamily" Value="{StaticResource OpenSansSemiBoldFont}" />
+            <Setter Property="FontSize" Value="13" />
+        </Style>
+
+        <Style Selector="TextBlock.Mono">
+            <Setter Property="FontFamily" Value="{StaticResource OxaniumBoldFont}" />
+        </Style>
+
+        <!-- ============ Shell / surfaces ============ -->
         <Style Selector="Border.Card">
-            <Setter Property="Background">
-                <LinearGradientBrush StartPoint="100%,100%" EndPoint="100%,0%">
-                    <GradientStop Offset="0" Color="#18181b" />
-                    <GradientStop Offset="1" Color="#242429" />
-                </LinearGradientBrush>
-            </Setter>
-            <Setter Property="BorderBrush" Value="#201f23" />
-            <Setter Property="BorderThickness" Value="2" />
+            <Setter Property="Background" Value="{StaticResource DmxSurface}" />
+            <Setter Property="BorderBrush" Value="{StaticResource DmxBorder}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="14" />
+            <Setter Property="Padding" Value="18" />
+            <Setter Property="Margin" Value="0,0,14,14" />
+        </Style>
+
+        <Style Selector="Border.CardCompact">
+            <Setter Property="Background" Value="{StaticResource DmxSurface}" />
+            <Setter Property="BorderBrush" Value="{StaticResource DmxBorder}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="12" />
+            <Setter Property="Padding" Value="14" />
+            <Setter Property="Margin" Value="0" />
+        </Style>
+
+        <Style Selector="Border.Well">
+            <Setter Property="Background" Value="{StaticResource DmxWell}" />
+            <Setter Property="BorderBrush" Value="{StaticResource DmxBorder}" />
+            <Setter Property="BorderThickness" Value="1" />
             <Setter Property="CornerRadius" Value="10" />
-            <Setter Property="Padding" Value="15" />
-            <Setter Property="Margin" Value="0 5 0 15" />
+            <Setter Property="Padding" Value="12" />
         </Style>
 
-        <Style Selector="Slider">
-            <Setter Property="Margin" Value="0 5" />
-            <Setter Property="Minimum" Value="0" />
-            <Setter Property="Maximum" Value="100" />
-            <Setter Property="TickFrequency" Value="10" />
-            <Setter Property="IsSnapToTickEnabled" Value="True" />
-            <Setter Property="Foreground" Value="#1B89D8" />
+        <Style Selector="Border.Hairline">
+            <Setter Property="Background" Value="{StaticResource DmxBorder}" />
+            <Setter Property="Height" Value="1" />
+            <Setter Property="Margin" Value="0,12" />
         </Style>
 
-        <!-- Button Styles with Gradients -->
+        <!-- ============ Buttons ============ -->
         <Style Selector="Button">
             <Setter Property="FontFamily" Value="{StaticResource OpenSansSemiBoldFont}" />
-            <Setter Property="Background">
-                <LinearGradientBrush StartPoint="0%,0%" EndPoint="0%,100%">
-                    <GradientStop Offset="0" Color="#4db5ff" />
-                    <GradientStop Offset="1" Color="#1168A6" />
-                </LinearGradientBrush>
-            </Setter>
-            <Setter Property="Foreground" Value="#ffffff" />
-            <Setter Property="Padding" Value="12 6" />
-            <Setter Property="CornerRadius" Value="4" />
-            <Setter Property="Margin" Value="0 5" />
-            <Setter Property="BorderBrush" Value="#1779c4" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="Background" Value="{StaticResource DmxSurfaceAlt}" />
+            <Setter Property="Foreground" Value="{StaticResource DmxText}" />
+            <Setter Property="BorderBrush" Value="{StaticResource DmxBorderStrong}" />
             <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Padding" Value="14,8" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="Transitions">
+                <Transitions>
+                    <BrushTransition Property="Background" Duration="0:0:0.15" />
+                    <BrushTransition Property="BorderBrush" Duration="0:0:0.15" />
+                    <DoubleTransition Property="Opacity" Duration="0:0:0.15" />
+                </Transitions>
+            </Setter>
         </Style>
 
         <Style Selector="Button:pointerover">
-            <Setter Property="Background">
-                <LinearGradientBrush StartPoint="0%,0%" EndPoint="0%,100%">
-                    <GradientStop Offset="0" Color="#65c0ff" />
-                    <GradientStop Offset="1" Color="#40a1f1" />
-                </LinearGradientBrush>
-            </Setter>
-            <Setter Property="Foreground" Value="#193052" />
+            <Setter Property="Background" Value="{StaticResource DmxSurfaceHover}" />
+            <Setter Property="BorderBrush" Value="#3E3E4C" />
         </Style>
 
         <Style Selector="Button:pressed">
-            <Setter Property="Background">
-                <LinearGradientBrush StartPoint="0%,0%" EndPoint="0%,100%">
-                    <GradientStop Offset="0" Color="#1c93e8" />
-                    <GradientStop Offset="1" Color="#1779c4" />
-                </LinearGradientBrush>
-            </Setter>
-            <Setter Property="BorderBrush" Value="#1566a3" />
+            <Setter Property="Background" Value="#101017" />
         </Style>
 
         <Style Selector="Button:disabled">
-            <Setter Property="Background">
-                <LinearGradientBrush StartPoint="0%,0%" EndPoint="0%,100%">
-                    <GradientStop Offset="0" Color="#a0c8e8" />
-                    <GradientStop Offset="1" Color="#7aa7cc" />
-                </LinearGradientBrush>
-            </Setter>
-            <Setter Property="Foreground" Value="#d0e0f0" />
-            <Setter Property="BorderBrush" Value="#7aa7cc" />
+            <Setter Property="Opacity" Value="0.45" />
         </Style>
 
-        <!-- Radio Button Styles with Gradients -->
-        <Style Selector="RadioButton">
-            <Setter Property="FontFamily" Value="{StaticResource OxaniumFont}" />
-            <Setter Property="Height" Value="100" />
-            <Setter Property="Width" Value="120" />
-            <Setter Property="Background">
-                <LinearGradientBrush StartPoint="0%,0%" EndPoint="0%,100%">
-                    <GradientStop Offset="0" Color="#d4eeff" />
-                    <GradientStop Offset="1" Color="#c1e5fc" />
-                </LinearGradientBrush>
-            </Setter>
-            <Setter Property="Foreground" Value="#193052" />
-            <Setter Property="BorderBrush" Value="#65bdf5" />
-            <Setter Property="BorderThickness" Value="2" />
-            <Setter Property="Padding" Value="12,6" />
+        <Style Selector="Button.Primary">
+            <Setter Property="Background" Value="{StaticResource DmxAccent}" />
+            <Setter Property="Foreground" Value="{StaticResource DmxOnAccent}" />
+            <Setter Property="BorderBrush" Value="{StaticResource DmxAccent}" />
+        </Style>
+        <Style Selector="Button.Primary:pointerover">
+            <Setter Property="Background" Value="{StaticResource DmxAccentHover}" />
+            <Setter Property="BorderBrush" Value="{StaticResource DmxAccentHover}" />
+            <Setter Property="Foreground" Value="{StaticResource DmxOnAccent}" />
+        </Style>
+        <Style Selector="Button.Primary:pressed">
+            <Setter Property="Background" Value="{StaticResource DmxAccentPressed}" />
+            <Setter Property="BorderBrush" Value="{StaticResource DmxAccentPressed}" />
+        </Style>
+
+        <Style Selector="Button.Ghost">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="{StaticResource DmxBorderStrong}" />
+        </Style>
+        <Style Selector="Button.Ghost:pointerover">
+            <Setter Property="Background" Value="{StaticResource DmxSurfaceAlt}" />
+        </Style>
+
+        <Style Selector="Button.DangerGhost">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Foreground" Value="{StaticResource DmxDanger}" />
+            <Setter Property="BorderBrush" Value="#4A2226" />
+        </Style>
+        <Style Selector="Button.DangerGhost:pointerover">
+            <Setter Property="Background" Value="{StaticResource DmxDangerSoft}" />
+            <Setter Property="BorderBrush" Value="#6B3034" />
+        </Style>
+
+        <Style Selector="Button.Icon">
+            <Setter Property="Padding" Value="7" />
             <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+        </Style>
+        <Style Selector="Button.Icon:pointerover">
+            <Setter Property="Background" Value="{StaticResource DmxSurfaceHover}" />
+        </Style>
+
+        <Style Selector="Button.Nav">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="CornerRadius" Value="9" />
+            <Setter Property="Padding" Value="12,10" />
+            <Setter Property="Margin" Value="0,1" />
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+            <Setter Property="HorizontalContentAlignment" Value="Left" />
+            <Setter Property="Foreground" Value="{StaticResource DmxTextSecondary}" />
+        </Style>
+        <Style Selector="Button.Nav:pointerover">
+            <Setter Property="Background" Value="{StaticResource DmxSurfaceAlt}" />
+            <Setter Property="Foreground" Value="{StaticResource DmxText}" />
+        </Style>
+        <Style Selector="Button.Nav.active">
+            <Setter Property="Background" Value="{StaticResource DmxAccentSoft}" />
+            <Setter Property="Foreground" Value="#DCEBFF" />
+        </Style>
+        <Style Selector="Button.Nav.active:pointerover">
+            <Setter Property="Background" Value="#1B3552" />
+            <Setter Property="Foreground" Value="#DCEBFF" />
+        </Style>
+
+        <Style Selector="Button.Chip">
+            <Setter Property="Background" Value="{StaticResource DmxSurfaceAlt}" />
+            <Setter Property="BorderBrush" Value="{StaticResource DmxBorderStrong}" />
+            <Setter Property="CornerRadius" Value="999" />
+            <Setter Property="Padding" Value="12,6" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Margin" Value="0,0,8,8" />
+        </Style>
+        <Style Selector="Button.Chip:pointerover">
+            <Setter Property="Background" Value="{StaticResource DmxSurfaceHover}" />
+        </Style>
+        <Style Selector="Button.Chip.active">
+            <Setter Property="Background" Value="{StaticResource DmxAccentSoft}" />
+            <Setter Property="BorderBrush" Value="#2E5D8F" />
+            <Setter Property="Foreground" Value="#CFE6FF" />
+        </Style>
+
+        <!-- ============ Radio tiles / segments ============ -->
+        <Style Selector="RadioButton.Tile">
+            <Setter Property="MinWidth" Value="112" />
+            <Setter Property="MinHeight" Value="92" />
+            <Setter Property="Padding" Value="12" />
+            <Setter Property="Margin" Value="0,0,10,10" />
+            <Setter Property="Background" Value="{StaticResource DmxSurfaceAlt}" />
+            <Setter Property="BorderBrush" Value="{StaticResource DmxBorderStrong}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="12" />
+            <Setter Property="Foreground" Value="{StaticResource DmxTextSecondary}" />
             <Setter Property="HorizontalContentAlignment" Value="Center" />
-            <Setter Property="VerticalContentAlignment" Value="Bottom" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="Cursor" Value="Hand" />
             <Setter Property="Template">
                 <ControlTemplate>
-                    <Panel>
-                        <Border Name="border"
-                                Background="{TemplateBinding Background}"
-                                BorderBrush="{TemplateBinding BorderBrush}"
-                                BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="{TemplateBinding CornerRadius}">
-                            <ContentPresenter Name="PART_ContentPresenter"
-                                              Content="{TemplateBinding Content}"
-                                              ContentTemplate="{TemplateBinding ContentTemplate}"
-                                              HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
-                                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
-                                              Padding="{TemplateBinding Padding}"
-                                              Foreground="{TemplateBinding Foreground}" />
-                        </Border>
-                    </Panel>
+                    <Border Name="PART_Border"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="{TemplateBinding CornerRadius}">
+                        <ContentPresenter Name="PART_ContentPresenter"
+                                          Content="{TemplateBinding Content}"
+                                          ContentTemplate="{TemplateBinding ContentTemplate}"
+                                          HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                          VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                          Padding="{TemplateBinding Padding}"
+                                          Foreground="{TemplateBinding Foreground}" />
+                    </Border>
+                </ControlTemplate>
+            </Setter>
+            <Setter Property="Transitions">
+                <Transitions>
+                    <BrushTransition Property="Background" Duration="0:0:0.15" />
+                    <BrushTransition Property="BorderBrush" Duration="0:0:0.15" />
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="RadioButton.Tile:pointerover /template/ Border#PART_Border">
+            <Setter Property="Background" Value="{StaticResource DmxSurfaceHover}" />
+            <Setter Property="BorderBrush" Value="#43434F" />
+        </Style>
+        <Style Selector="RadioButton.Tile:checked /template/ Border#PART_Border">
+            <Setter Property="Background" Value="{StaticResource DmxAccentSoft}" />
+            <Setter Property="BorderBrush" Value="{StaticResource DmxAccent}" />
+        </Style>
+        <Style Selector="RadioButton.Tile:checked">
+            <Setter Property="Foreground" Value="#DCEBFF" />
+        </Style>
+        <Style Selector="RadioButton.Tile:disabled">
+            <Setter Property="Opacity" Value="0.4" />
+        </Style>
+
+        <Style Selector="RadioButton.Segment">
+            <Setter Property="MinWidth" Value="78" />
+            <Setter Property="Padding" Value="14,8" />
+            <Setter Property="Margin" Value="0,0,8,0" />
+            <Setter Property="Background" Value="{StaticResource DmxSurfaceAlt}" />
+            <Setter Property="BorderBrush" Value="{StaticResource DmxBorderStrong}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="9" />
+            <Setter Property="Foreground" Value="{StaticResource DmxTextSecondary}" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <Border Name="PART_Border"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="{TemplateBinding CornerRadius}">
+                        <ContentPresenter Name="PART_ContentPresenter"
+                                          Content="{TemplateBinding Content}"
+                                          ContentTemplate="{TemplateBinding ContentTemplate}"
+                                          HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                          VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                          Padding="{TemplateBinding Padding}"
+                                          Foreground="{TemplateBinding Foreground}" />
+                    </Border>
                 </ControlTemplate>
             </Setter>
         </Style>
-
-        <!-- Pointer over state -->
-        <Style Selector="RadioButton:pointerover /template/ Border#border">
-            <Setter Property="Background">
-                <LinearGradientBrush StartPoint="0%,0%" EndPoint="0%,100%">
-                    <GradientStop Offset="0" Color="#c1e5fc" />
-                    <GradientStop Offset="1" Color="#96d6fa" />
-                </LinearGradientBrush>
-            </Setter>
-            <Setter Property="BorderBrush" Value="#40a1f1" />
+        <Style Selector="RadioButton.Segment:pointerover /template/ Border#PART_Border">
+            <Setter Property="Background" Value="{StaticResource DmxSurfaceHover}" />
+        </Style>
+        <Style Selector="RadioButton.Segment:checked /template/ Border#PART_Border">
+            <Setter Property="Background" Value="{StaticResource DmxAccent}" />
+            <Setter Property="BorderBrush" Value="{StaticResource DmxAccent}" />
+        </Style>
+        <Style Selector="RadioButton.Segment:checked">
+            <Setter Property="Foreground" Value="{StaticResource DmxOnAccent}" />
+        </Style>
+        <Style Selector="RadioButton.Segment:disabled">
+            <Setter Property="Opacity" Value="0.4" />
         </Style>
 
-
-        <!-- Pressed state -->
-        <Style Selector="RadioButton:pressed /template/ Border#border">
-            <Setter Property="Background">
-                <LinearGradientBrush StartPoint="0%,0%" EndPoint="0%,100%">
-                    <GradientStop Offset="0" Color="#96d6fa" />
-                    <GradientStop Offset="1" Color="#65bdf5" />
-                </LinearGradientBrush>
-            </Setter>
-            <Setter Property="BorderBrush" Value="#40a1f1" />
+        <!-- ============ Inputs ============ -->
+        <Style Selector="ProgressBar">
+            <Setter Property="Height" Value="6" />
+            <Setter Property="MinHeight" Value="6" />
+            <Setter Property="Background" Value="#23232D" />
+            <Setter Property="Foreground" Value="{StaticResource DmxAccent}" />
         </Style>
 
-        <!-- Selected state -->
-        <Style Selector="RadioButton:checked /template/ Border#border">
-            <Setter Property="Background">
-                <LinearGradientBrush StartPoint="0%,0%" EndPoint="0%,100%">
-                    <GradientStop Offset="0" Color="#7ac6f9" />
-                    <GradientStop Offset="1" Color="#40a1f1" />
-                </LinearGradientBrush>
-            </Setter>
-            <Setter Property="BorderBrush" Value="#1779c4" />
-            <Setter Property="BorderThickness" Value="3" />
+        <Style Selector="Slider">
+            <Setter Property="Margin" Value="0" />
+            <Setter Property="Foreground" Value="{StaticResource DmxAccent}" />
         </Style>
 
-        <!-- Selected adjustment for size -->
-        <Style Selector="RadioButton:checked">
-            <Setter Property="Width" Value="150" />
-            <Setter Property="Foreground" Value="#112139" />
+        <Style Selector="CheckBox">
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="MinHeight" Value="28" />
         </Style>
 
-        <!-- Selected + Pointer over state -->
-        <Style Selector="RadioButton:checked:pointerover /template/ Border#border">
-            <Setter Property="Background">
-                <LinearGradientBrush StartPoint="0%,0%" EndPoint="0%,100%">
-                    <GradientStop Offset="0" Color="#96d6fa" />
-                    <GradientStop Offset="1" Color="#65bdf5" />
-                </LinearGradientBrush>
-            </Setter>
-            <Setter Property="BorderBrush" Value="#1779c4" />
+        <Style Selector="ComboBox">
+            <Setter Property="Background" Value="{StaticResource DmxSurfaceAlt}" />
+            <Setter Property="BorderBrush" Value="{StaticResource DmxBorderStrong}" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="MinHeight" Value="34" />
         </Style>
 
-        <!-- Selected + Pressed state -->
-        <Style Selector="RadioButton:checked:pressed /template/ Border#border">
-            <Setter Property="Background">
-                <LinearGradientBrush StartPoint="0%,0%" EndPoint="0%,100%">
-                    <GradientStop Offset="0" Color="#65bdf5" />
-                    <GradientStop Offset="1" Color="#40a1f1" />
-                </LinearGradientBrush>
-            </Setter>
-            <Setter Property="BorderBrush" Value="#1566a3" />
+        <Style Selector="TextBox">
+            <Setter Property="Background" Value="{StaticResource DmxWell}" />
+            <Setter Property="BorderBrush" Value="{StaticResource DmxBorderStrong}" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="MinHeight" Value="34" />
+            <Setter Property="Padding" Value="10,6" />
         </Style>
 
-        <!-- Disabled state -->
-        <Style Selector="RadioButton:disabled /template/ Border#border">
-            <Setter Property="Background">
-                <LinearGradientBrush StartPoint="0%,0%" EndPoint="0%,100%">
-                    <GradientStop Offset="0" Color="#a0c8e8" />
-                    <GradientStop Offset="1" Color="#7aa7cc" />
-                </LinearGradientBrush>
-            </Setter>
-            <Setter Property="BorderBrush" Value="#7aa7cc" />
+        <Style Selector="ScrollViewer">
+            <Setter Property="Background" Value="Transparent" />
         </Style>
 
-        <Style Selector="RadioButton:disabled /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="Foreground" Value="#6d8cb0" />
+        <Style Selector="material|MaterialIcon">
+            <Setter Property="Foreground" Value="{StaticResource DmxTextSecondary}" />
         </Style>
     </Application.Styles>
-
-
 </Application>

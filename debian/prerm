@@ -1,0 +1,17 @@
+#!/bin/sh
+set -e
+
+PATH=/sbin:/bin:/usr/sbin:/usr/bin
+
+if [ "$1" = "remove" ]; then
+    if [ -d /run/systemd/system ]; then
+        systemctl stop nitro-key-detection.service >/dev/null 2>&1 || true
+        systemctl disable nitro-key-detection.service >/dev/null 2>&1 || true
+        systemctl stop damx-daemon.service >/dev/null 2>&1 || true
+        systemctl disable damx-daemon.service >/dev/null 2>&1 || true
+    fi
+fi
+
+#DEBHELPER#
+
+exit 0

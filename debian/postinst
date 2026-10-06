@@ -1,0 +1,36 @@
+#!/bin/sh
+set -e
+
+PATH=/sbin:/bin:/usr/sbin:/usr/bin
+
+if [ "$1" = "configure" ]; then
+    # Migrate away from units written by the standalone installer, which would
+    # otherwise shadow the packaged units in /usr/lib/systemd/system.
+    for unit in damx-daemon.service nitro-key-detection.service; do
+        if [ -f "/etc/systemd/system/$unit" ]; then
+            echo "DAMX: moving legacy unit /etc/systemd/system/$unit aside"
+            mv -f "/etc/systemd/system/$unit" "/etc/systemd/system/$unit.legacy-manual-backup" || true
+        fi
+    done
+
+    # Stale PyInstaller daemon from the standalone installer.
+    rm -f /opt/damx/daemon/DAMX-Daemon 2>/dev/null || true
+
+    if [ -d /run/systemd/system ]; then
+        systemctl daemon-reload || true
+        systemctl enable damx-daemon.service >/dev/null 2>&1 || true
+        systemctl restart damx-daemon.service >/dev/null 2>&1 || true
+    fi
+
+    echo ""
+    echo "DAMX installed. Next steps:"
+    echo "  * Kernel drivers ......... sudo damx-setup --drivers"
+    echo "  * Nitro/PredatorSense key  sudo damx-setup --nitro"
+    echo "  * Status ................. damx-setup"
+    echo ""
+    echo "The GUI is available as 'damx' / 'DAMX' or from the application menu."
+fi
+
+#DEBHELPER#
+
+exit 0

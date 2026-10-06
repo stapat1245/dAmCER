@@ -16,3 +16,13 @@ DAMM-Daemon/build/
 DAMM-Daemon/dist/
 
 DAMM-Daemon/__pycache__/
+
+# Packaging artifacts
+build/
+dist/
+debian/damx/
+debian/files
+debian/.debhelper/
+debian/debhelper-build-stamp
+debian/*.substvars
+debian/*.debhelper.log

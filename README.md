@@ -1,144 +1,103 @@
-<p align="center">
-  <img src="https://github.com/user-attachments/assets/6d383e82-8221-438b-9d6d-a19e998fcc59" alt="icon" width="80" style="vertical-align: middle;">
-</p>
+# Div Acer Manager Max
 
-<h1 align="center">
-  Div Acer Manager Max
-</h1>
+Linux control utility for Acer laptops, built on the
+[Linuwu Sense](https://github.com/0x7375646F/Linuwu-Sense) drivers. Replicates
+and extends Acer NitroSense / PredatorSense with performance profiles, fan
+control, battery management, keyboard backlight control, LCD override and live
+hardware monitoring.
 
-**Div Acer Manager Max** is a feature-rich Linux GUI utility for Acer laptops powered by the incredible [Linuwu Sense](https://github.com/0x7375646F/Linuwu-Sense) drivers. It replicates and expands on Acer’s NitroSense and PredatorSense capabilities on Linux with full fan control, performance modes, battery optimization, backlight settings, and more — all wrapped in a modern Avalonia-based UI.
-
-> [!CAUTION]
 > Project is under passive development.
 
-![Title Image](https://github.com/user-attachments/assets/a60898a6-a2b8-432e-b5a2-8d0a45c63484)
+## Features
 
-<h4 align="center">
-⭐ Please star this repository to show support. It motivates me to make the project better for everyone
-</h4>  
+- Performance profiles: Eco, Quiet, Balanced, Performance, Turbo. Availability follows AC/battery state.
+- Custom profiles: save, apply and delete full configuration sets. Stored in `~/.config/DivAcerManagerMax/profiles.json`.
+- Fan control: auto, max, manual CPU/GPU speeds, and custom fan curves with safety reset on exit.
+- Live monitoring: CPU/GPU temperature, usage, frequency, power, GPU VRAM, fan RPM, battery health/cycles, live graphs.
+- Battery: charge limiter (80%), calibration cycle, USB Power Delivery.
+- Keyboard: per-zone RGB, presets, dynamic effects, backlight timeout.
+- System: LCD override, boot animation/sound toggle.
+- Diagnostics: daemon and service state, sensor sources, log tail, copyable report, restart controls.
+- Compatibility page: per-feature support matrix; the UI hides unsupported features.
+- System tray, in-app notifications, modern dark UI.
 
-## ✨ Features
+The daemon auto-detects feature support, uses around 10 MB RAM, runs
+independently of the GUI and supports recursive restart for recovery.
 
-### ✅ Fully Implemented
+## Requirements
 
-* 🔋 **Performance / Thermal Profiles**
-  Eco, Silent, Balanced, Performance, Turbo — automatically adjusted based on AC/battery status
-  (e.g., Turbo hidden when on battery or unsupported)
+- Ubuntu 25+ or Debian equivalent (standalone installer also available)
+- Kernel 6.13+
+- Linuwu Sense kernel drivers (installed in the steps below)
 
-* 🌡 **Fan Control**
-  Manual and Auto fan speed modes
-  Manual disabled automatically when in Quiet profile
+## Installation
 
-* 💡 **LCD Override Setting**
-  Direct control over LCD power behavior
+### Debian package (recommended)
 
-* 🎨 **Keyboard Backlight Timeout Control**
-  Customize the keyboard backlight timeout
+Download `damx_<version>_amd64.deb` from
+[Releases](https://github.com/PXDiv/Div-Acer-Manager-Max/releases), then:
 
-* 🔊 **Boot Animation and Sound Toggle**
-  Enable/disable Acer's startup animations and sounds
+```bash
+sudo apt install ./damx_1.1.0_amd64.deb
+sudo damx-setup --drivers   # compile and install the kernel drivers
+sudo damx-setup --nitro     # optional: enable the Nitro/PredatorSense button
+damx-setup                  # show daemon, driver and button status
+```
 
-* 💻 **Live System Info Display**
-  Shows real-time performance profile, fan settings, calibration state, and more
+The GUI is available as `damx` / `DAMX` and in the application menu. Kernel
+drivers are built against your running kernel, which is why they are a separate
+step (`damx-setup --drivers`).
 
-* 🧠 **Smart Daemon (Low Resource Use)**
+### Standalone installer
 
-  * Auto-detects feature support per device
-  * Communicates with GUI in real-time
-  * Lightweight: uses \~10MB RAM
-  * Can run **independently** of GUI
-  * Recursive restart to fix software issues similar to those on Windows
+1. Download the latest release and extract it.
+2. Make the script executable: `chmod +x setup.sh`
+3. Run it: `./setup.sh`
+4. Choose an option: `1` install, `2` install without drivers, `3` uninstall, `4` reinstall/update.
+5. Reboot.
 
-* 🖥️ **Modern GUI**
+### Build the package yourself
 
-  * Avalonia-based, clean and responsive
-  * Realtime Monitoring with Dashboard and accurate Tempreature Readings
-  * Dynamic UI hides unsupported features
-  * Real-time feedback from daemon
+```bash
+./packaging/build-deb.sh
+```
 
-## 🧭 Compatibility
+Requirements: .NET SDK 9, `dpkg-dev`, `debhelper`, `fakeroot`. Output:
+`dist/damx_<version>_amd64.deb`. See [packaging/README.md](packaging/README.md)
+for details and for hosting your own apt repository.
 
-Check your device's compatibility here: [Compatibility List](https://github.com/PXDiv/Div-Acer-Manager-Max/blob/main/Compatibility.md)
+## Nitro / PredatorSense button
 
-> Even if not here, DAMX will still work on most devices. Please file a issue on Linuwu-sense page (it will be ignored here)
+Both Nitro (N key) and Predator machines use the same EC button. It sends
+scancode `0xf5`, which the kernel maps to keycode `425` on most models; some
+models remap it to `prog1` (`148`), so setup captures the code from an actual
+press instead of assuming one.
 
-## 🖥️ DAMX Installation Guide
+Confirmed: Nitro ANV16S-41 and Predator PHN16S-71 (both `425`).
 
-1. Download the latest release from the **[Releases](https://github.com/PXDiv/Div-Acer-Manager-Max/releases)** section.
+keyd/kmonad users: remappers grab the keyboard exclusively, so the detection
+service never sees the button. Bind it in the remapper config instead (after
+keyd it typically appears as `f16` / `XF86Launch7`).
 
-2. Extract the downloaded package.
+## Compatibility
 
-3. Make the `setup.sh` script executable:
+Supported models are listed in [Compatibility.md](Compatibility.md). DAMX works
+on most Acer devices even when not listed; if your model is missing, filing an
+issue with the model details helps others.
 
-   ```bash
-   chmod +x setup.sh
-   ```
+## Troubleshooting
 
-4. Run the script:
+- Logs: `/var/log/DAMX_Daemon_Log.log`
+- `UNKNOWN` laptop type: restart first. If it persists, the drivers likely
+  failed to build (check kernel headers).
+- Check [FAQ.md](FAQ.md) before opening an issue.
+- Report bugs or request features via
+  [Issues](https://github.com/PXDiv/Div-Acer-Manager-Max/issues).
 
-   * Right-click the setup file and choose **“Run in Terminal”**,
-     or open a terminal in the folder and run:
+## Credits
 
-     ```bash
-     ./setup.sh
-     ```
+Built on the [Linuwu Sense](https://github.com/0x7375646F/Linuwu-Sense) drivers.
 
-5. When prompted, choose an option from the menu:
+## License
 
-   * `1` → Install
-   * `2` → Install without Drivers
-   * `3` → Uninstall
-   * `4` → Reinstall/Update
-
-6. Reboot your system after the installation completes.
-
-✅ That’s it—you’re all set!
-
-## 🔘 Nitro / PredatorSense Button
-
-During setup you can bind your laptop's dedicated button (the **N** key on
-Nitros, the **PredatorSense** key on Predators) to open DAMX. Both are the
-same button as far as the EC is concerned — it sends scancode `0xf5`, which
-the kernel maps to keycode `425` on most models. Some models carry a udev
-hwdb quirk that remaps it to `prog1` (`148`) instead, which is why setup
-captures the code from an actual press rather than assuming one.
-
-Confirmed so far: Nitro ANV16S-41, Predator PHN16S-71 (both `425`).
-
-**Note for keyd/kmonad users:** key remappers grab the keyboard exclusively,
-so the detection service never sees the button. Bind the key in the
-remapper's config instead (after keyd it typically surfaces as `f16` /
-`XF86Launch7`).
-
-## 🖥️ Troubleshooting
-
-You can check the logs at /var/log/DAMX_Daemon_Log.log
-
-If you get UNKNOWN as Laptop type, try restarting (it happens sometimes)
-But if it still happens that might mean the Drivers Installation failed, Make sure you have the appropriate kernel headers to compile the drivers.
-
-Also, check out the [FAQ page](https://github.com/PXDiv/Div-Acer-Manager-Max/blob/main/FAQ.md) before opening any issues.
-
-Please open a new issue or discussion and include the logs to get support and help the project grow if you need any info, report a bug or just give ideas for the future versions of DAMX
-
-## Screenshots
-
-![image](https://github.com/user-attachments/assets/10d44e8c-14e4-4441-b60c-538af1840cf6)
-![image](https://github.com/user-attachments/assets/89217b26-b94c-4c78-8fe8-3de2b22a7095)
-![image](https://github.com/user-attachments/assets/72a7b944-5efc-4520-83b6-88069fc05723)
-![image](https://github.com/user-attachments/assets/f9a9d663-70c6-482e-a0c4-15a4ea08a8d2)
-
-## ❤️ Powered by Linuwu
-
-The custom drivers for this project [Div-Linuwu Sense project](https://github.com/PXDiv/Div-Linuwu-Sense) is built entirely on top of the [Linuwu Sense](https://github.com/0x7375646F/Linuwu-Sense) drivers — huge thanks to their developers for enabling hardware-level access on Acer laptops.
-
-## 🤝 Contributing
-
-* Report bugs or request features via GitHub Issues
-* Submit pull requests to improve code or UI
-* Help test on different Acer laptop models
-
-## 📄 License
-
-This project is licensed under the **GNU General Public License v3.0**.  
-See the [LICENSE](LICENSE) file for details.
+GNU General Public License v3.0. See [LICENSE](LICENSE).

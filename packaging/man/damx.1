@@ -1,0 +1,32 @@
+.TH DAMX 1 "2026-10-07" "DAMX 1.1.0" "User Commands"
+.SH NAME
+damx \- Div Acer Manager Max GUI for Acer laptops
+.SH SYNOPSIS
+.B damx
+.RI [ options ]
+.SH DESCRIPTION
+.B damx
+is the graphical front-end of Div Acer Manager Max. It talks to the DAMX daemon
+over the Unix socket
+.I /var/run/DAMX.sock
+and exposes performance profiles, fan control, battery charge limiting and
+calibration, keyboard backlight control, LCD override and live hardware
+telemetry on supported Acer laptops.
+.PP
+The application runs as the normal desktop user. Administrative actions are
+performed by the daemon, which runs as root under systemd
+.RI ( damx-daemon.service ).
+.SH OPTIONS
+The program accepts the standard Avalonia command-line options; no application
+specific options are defined.
+.SH FILES
+.TP
+.I ~/.config/DivAcerManagerMax/profiles.json
+Saved custom profiles, fan curves and application preferences.
+.TP
+.I /var/log/DAMX_Daemon_Log.log
+Daemon log file.
+.SH SEE ALSO
+.BR damx-setup (1)
+.SH AUTHOR
+PXDiv and contributors.

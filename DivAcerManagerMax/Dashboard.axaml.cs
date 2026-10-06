@@ -2,23 +2,19 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.Diagnostics;
-using System.Globalization;
-using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Text.RegularExpressions;
-using System.Threading;
 using System.Threading.Tasks;
-using Avalonia.Animation;
+using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Interactivity;
 using Avalonia.Media;
-using Avalonia.Styling;
 using Avalonia.Threading;
+using DivAcerManagerMax.Services;
 using LiveChartsCore;
 using LiveChartsCore.SkiaSharpView;
-using LiveChartsCore.SkiaSharpView.Avalonia;
 using LiveChartsCore.SkiaSharpView.Painting;
+using Material.Icons;
 using Material.Icons.Avalonia;
 using SkiaSharp;
 
@@ -26,1552 +22,566 @@ namespace DivAcerManagerMax;
 
 public partial class Dashboard : UserControl, INotifyPropertyChanged
 {
-    private const int REFRESH_INTERVAL_MS = 2000; // 2 seconds
-    private const int MAX_HISTORY_POINTS = 60; // 1 minute of history (30 * 2s refresh)
+    private const int MaxHistoryPoints = 60;
+    private const int MinRpmForSpin = 150;
 
-    private const int MIN_RPM_FOR_ANIMATION = 100;
-    private const double MAX_ANIMATION_DURATION = 5.0; // seconds for very slow rotation
-    private const double MIN_ANIMATION_DURATION = 0.05; // seconds for very fast rotation
-    private const int RPM_CHANGE_THRESHOLD = 500; // Only update animation if RPM changes by this much
-    private readonly RotateTransform _cpuFanRotateTransform;
-    private readonly RotateTransform _gpuFanRotateTransform;
+    private static readonly IBrush BrushOk = new SolidColorBrush(Color.Parse("#38C793"));
+    private static readonly IBrush BrushWarn = new SolidColorBrush(Color.Parse("#E9A83C"));
+    private static readonly IBrush BrushHot = new SolidColorBrush(Color.Parse("#F0595E"));
 
-    // Timer to refresh dynamic system metrics
-    private readonly DispatcherTimer _refreshTimer;
+    private readonly ObservableCollection<double> _cpuTempHistory = new();
+    private readonly ObservableCollection<double> _gpuTempHistory = new();
+    private readonly ObservableCollection<double> _cpuUsageHistory = new();
+    private readonly ObservableCollection<double> _gpuUsageHistory = new();
+    private readonly ObservableCollection<double> _cpuFanHistory = new();
+    private readonly ObservableCollection<double> _gpuFanHistory = new();
 
-    // Cache for system info paths
-    private readonly Dictionary<string, string> _systemInfoPaths = new();
+    private readonly DispatcherTimer _spinTimer;
+    private bool _spinTimerRunning;
 
-    private bool _animationsInitialized;
-    private string? _batteryDir;
-    private int _batteryPercentageInt;
-    private string _batteryStatus;
-    private string _batteryTimeRemainingString;
-    private Animation? _cpuFanAnimation;
-    private int _cpuFanSpeedRpm;
-    private string _cpuName;
-    private double _cpuTemp;
-    private ObservableCollection<double> _cpuTempHistory;
-    private double _cpuUsage;
+    private readonly RotateTransform _cpuFanTransform = new();
+    private readonly RotateTransform _gpuFanTransform = new();
 
-    public bool _fanPathsSearched;
-    private Animation? _gpuFanAnimation;
-    private int _gpuFanSpeedRpm;
-    private string _gpuName;
-    private double _gpuTemp;
-    private ObservableCollection<double> _gpuTempHistory;
-    private GpuType _gpuType = GpuType.Unknown;
-    private double _gpuUsage;
+    private readonly List<ISeries> _tempSeries;
+    private readonly List<ISeries> _usageSeries;
+    private readonly List<ISeries> _fanSeries;
+
+    private DAMXSettings? _settings;
+    private Func<string, Task>? _profileRequested;
+    private Func<string, Task>? _fanModeRequested;
+
+    private string _currentProfile = "";
+    private double _cpuAngle;
+    private double _gpuAngle;
+    private int _cpuRpm;
+    private int _gpuRpm;
+    private string _chartMode = "temp";
+
+    private string _modelText = "Detecting hardware…";
+    private string _powerSourceText = "Detecting…";
+    private IBrush _powerSourceBrush = BrushOk;
+    private MaterialIconKind _powerSourceIcon = MaterialIconKind.PowerPlugOutline;
+
+    private string _cpuModel = "Detecting…";
+    private string _cpuTempText = "—";
+    private double _cpuTempValue;
+    private IBrush _cpuTempBrush = BrushOk;
+    private string _cpuTempBadge = "—";
+    private string _cpuUsageText = "—";
+    private double _cpuUsageValue;
+    private string _cpuFreqText = "—";
+    private string _cpuPowerText = "—";
+
+    private string _gpuModel = "Detecting…";
+    private string _gpuTempText = "—";
+    private double _gpuTempValue;
+    private IBrush _gpuTempBrush = BrushOk;
+    private string _gpuTempBadge = "—";
+    private string _gpuUsageText = "—";
+    private double _gpuUsageValue;
+    private string _gpuFreqText = "—";
+    private string _gpuPowerText = "—";
+    private bool _vramVisible;
+    private string _vramText = "—";
+    private double _vramValue;
+
+    private string _ramUsageText = "—";
+    private double _ramUsageValue;
+    private string _ramTotalText = "—";
+    private string _osText = "—";
+    private string _kernelText = "—";
+
+    private string _fanModeText = "Auto";
+    private string _cpuFanText = "—";
+    private string _gpuFanText = "—";
+    private string _fanSourceText = "";
+
     private bool _hasBattery;
-    private string _kernelVersion;
-    private int _lastCpuRpm;
-    private int _lastGpuRpm;
-    private string _osVersion;
-    private string _ramTotal;
-    private double _ramUsage;
-    private CartesianChart _temperatureChart;
-    private ObservableCollection<ISeries> _tempSeries;
+    private string _batteryPercentText = "—";
+    private double _batteryPercentValue;
+    private string _batteryStatusText = "Unknown";
+    private string _batteryTimeText = "—";
+    private string _batteryHealthText = "—";
+    private string _batteryCyclesText = "—";
+    private string _batteryPowerText = "—";
+
+    private string _currentProfileText = "Balanced";
+    private string _profileHintText = "Profiles follow AC / battery state.";
+    private string _daemonVersionText = "—";
+    private string _driverVersionText = "—";
+    private string _featureCountText = "—";
 
     public Dashboard()
     {
         InitializeComponent();
+
+        CpuFanIcon.RenderTransform = _cpuFanTransform;
+        GpuFanIcon.RenderTransform = _gpuFanTransform;
+
+        _tempSeries = new List<ISeries>
+        {
+            Line(_cpuTempHistory, "CPU", SKColor.Parse("#3D9BF7")),
+            Line(_gpuTempHistory, "GPU", SKColor.Parse("#38C793"))
+        };
+        _usageSeries = new List<ISeries>
+        {
+            Line(_cpuUsageHistory, "CPU", SKColor.Parse("#3D9BF7")),
+            Line(_gpuUsageHistory, "GPU", SKColor.Parse("#E9A83C"))
+        };
+        _fanSeries = new List<ISeries>
+        {
+            Line(_cpuFanHistory, "CPU fan", SKColor.Parse("#3D9BF7")),
+            Line(_gpuFanHistory, "GPU fan", SKColor.Parse("#38C793"))
+        };
+
+        SetChartMode("temp");
+
         DataContext = this;
 
-        // Initialize rotate transforms
-        _cpuFanRotateTransform = new RotateTransform();
-        _gpuFanRotateTransform = new RotateTransform();
+        // One shared poller feeds every page; the fan spin animation only runs
+        // while this page is visible and the fans are actually turning.
+        _spinTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(50) };
+        _spinTimer.Tick += (_, _) => SpinFans();
 
-        // Initialize default values for battery properties
-        BatteryPercentage.Text = "0";
-        BatteryTimeRemaining.Text = "0";
-        BatteryStatus = "Unknown";
-
-        // Fetch static system information once at initialization
-        InitializeStaticSystemInfo();
-
-        // Setup refresh timer for dynamic metrics
-        _refreshTimer = new DispatcherTimer
+        MetricsPoller.Updated += OnMetricsUpdated;
+        DetachedFromVisualTree += (_, _) =>
         {
-            Interval = TimeSpan.FromMilliseconds(REFRESH_INTERVAL_MS)
+            MetricsPoller.Updated -= OnMetricsUpdated;
+            _spinTimer.Stop();
+            _spinTimerRunning = false;
         };
-        _refreshTimer.Tick += RefreshDynamicMetrics;
-        _refreshTimer.Start();
-
-        // Initial refresh of dynamic metrics
-        RefreshDynamicMetricsAsync();
     }
 
-    public string CpuName
+    private void OnMetricsUpdated(SystemSnapshot snapshot)
     {
-        get => _cpuName;
-        set => SetProperty(ref _cpuName, value);
+        Dispatcher.UIThread.Post(() => Apply(snapshot));
     }
 
-    public string GpuName
+    // ------------------------------------------------------------ delegates
+
+    public void Configure(
+        DAMXSettings? settings,
+        Func<string, Task>? profileRequested,
+        Func<string, Task>? fanModeRequested)
     {
-        get => _gpuName;
-        set => SetProperty(ref _gpuName, value);
+        _settings = settings;
+        _profileRequested = profileRequested;
+        _fanModeRequested = fanModeRequested;
+
+        DaemonVersionText = settings == null ? "—" : $"v{settings.Version}";
+        DriverVersionText = settings == null ? "—" : $"v{settings.DriverVersion}";
+        FeatureCountText = settings?.AvailableFeatures == null
+            ? "—"
+            : $"{settings.AvailableFeatures.Count} supported";
+
+        BuildProfileChips();
+        BuildFanModeChips();
     }
 
-    public int CpuFanSpeedRPM
+    public void SetActiveProfile(string profile)
     {
-        get => _cpuFanSpeedRpm;
-        set => SetProperty(ref _cpuFanSpeedRpm, value);
+        _currentProfile = profile ?? "";
+        CurrentProfileText = ProfileLabel(_currentProfile);
+        foreach (var child in ProfileChipsPanel.Children.OfType<Button>())
+            child.Classes.Set("active", string.Equals((string?)child.Tag, _currentProfile,
+                StringComparison.OrdinalIgnoreCase));
     }
 
-    public int GpuFanSpeedRPM
+    public void SetActiveFanMode(string mode)
     {
-        get => _gpuFanSpeedRpm;
-        set => SetProperty(ref _gpuFanSpeedRpm, value);
+        foreach (var child in FanModeChipsPanel.Children.OfType<Button>())
+            child.Classes.Set("active", string.Equals((string?)child.Tag, mode, StringComparison.OrdinalIgnoreCase));
+
+        FanModeText = mode.ToLowerInvariant() switch
+        {
+            "max" => "Maximum cooling",
+            "manual" => "Manual speed",
+            "curve" => "Custom fan curve",
+            _ => "Automatic (EC controlled)"
+        };
     }
 
-    public string OsVersion
+    private void BuildProfileChips()
     {
-        get => _osVersion;
-        set => SetProperty(ref _osVersion, value);
+        ProfileChipsPanel.Children.Clear();
+        var available = _settings?.ThermalProfile?.Available ?? new List<string>();
+
+        foreach (var profile in available)
+        {
+            var chip = new Button
+            {
+                Content = ProfileLabel(profile),
+                Tag = profile,
+                Classes = { "Chip" }
+            };
+            chip.Click += async (_, _) =>
+            {
+                try
+                {
+                    if (_profileRequested != null) await _profileRequested(profile);
+                }
+                catch
+                {
+                    // MainWindow reports failures through toasts.
+                }
+            };
+            ProfileChipsPanel.Children.Add(chip);
+        }
+
+        if (ProfileChipsPanel.Children.Count == 0)
+            ProfileChipsPanel.Children.Add(new TextBlock
+            {
+                Text = "No profiles reported by daemon",
+                Classes = { "Dim" },
+                FontSize = 11,
+                VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center
+            });
+
+        SetActiveProfile(_settings?.ThermalProfile?.Current ?? "");
     }
 
-    public string KernelVersion
+    private void BuildFanModeChips()
     {
-        get => _kernelVersion;
-        set => SetProperty(ref _kernelVersion, value);
+        FanModeChipsPanel.Children.Clear();
+        AddFanChip("auto", "Auto");
+        AddFanChip("max", "Max");
+        AddFanChip("manual", "Manual");
     }
 
-    public string RamTotal
+    private void AddFanChip(string mode, string label)
     {
-        get => _ramTotal;
-        set => SetProperty(ref _ramTotal, value);
+        var chip = new Button { Content = label, Tag = mode, Classes = { "Chip" } };
+        chip.Click += async (_, _) =>
+        {
+            try
+            {
+                if (_fanModeRequested != null) await _fanModeRequested(mode);
+            }
+            catch
+            {
+                // MainWindow reports failures through toasts.
+            }
+        };
+        FanModeChipsPanel.Children.Add(chip);
     }
 
-    public double CpuTemp
+    private static string ProfileLabel(string profile)
     {
-        get => _cpuTemp;
-        set => SetProperty(ref _cpuTemp, value);
+        return profile.ToLowerInvariant() switch
+        {
+            "low-power" => "Eco",
+            "quiet" => "Quiet",
+            "balanced" => "Balanced",
+            "balanced-performance" => "Performance",
+            "performance" => "Turbo",
+            _ => string.IsNullOrWhiteSpace(profile) ? "Balanced" : profile
+        };
     }
 
-    public double GpuTemp
+    // ------------------------------------------------------------- metrics
+
+    private void Apply(SystemSnapshot snap)
     {
-        get => _gpuTemp;
-        set => SetProperty(ref _gpuTemp, value);
+        ModelText = snap.Model;
+        CpuModel = snap.CpuName;
+        GpuModel = snap.GpuPresent ? snap.GpuName : "No discrete GPU detected";
+
+        CpuTempValue = snap.CpuTemp;
+        CpuTempText = snap.CpuTemp > 0 ? $"{snap.CpuTemp:F1} °C" : "—";
+        CpuTempBrush = TempBrush(snap.CpuTemp);
+        CpuTempBadge = TempBadge(snap.CpuTemp);
+        CpuUsageValue = snap.CpuUsage;
+        CpuUsageText = $"{snap.CpuUsage:F0} %";
+        CpuFreqText = snap.CpuFreqGhz > 0 ? $"{snap.CpuFreqGhz:F2} GHz" : "—";
+        CpuPowerText = snap.CpuPowerW.HasValue ? $"{snap.CpuPowerW.Value:F1} W" : "—";
+
+        GpuTempValue = snap.GpuTemp;
+        GpuTempText = snap.GpuTemp > 0 ? $"{snap.GpuTemp:F1} °C" : "—";
+        GpuTempBrush = TempBrush(snap.GpuTemp);
+        GpuTempBadge = TempBadge(snap.GpuTemp);
+        GpuUsageValue = snap.GpuUsage;
+        GpuUsageText = $"{snap.GpuUsage:F0} %";
+        GpuFreqText = snap.GpuFreqMhz.HasValue ? $"{snap.GpuFreqMhz.Value:F0} MHz" : "—";
+        GpuPowerText = snap.GpuPowerW.HasValue ? $"{snap.GpuPowerW.Value:F1} W" : "—";
+
+        VramVisible = snap.GpuVramUsedGb.HasValue && snap.GpuVramTotalGb.HasValue;
+        if (VramVisible)
+        {
+            VramText = $"{snap.GpuVramUsedGb:F1} / {snap.GpuVramTotalGb:F1} GB";
+            VramValue = snap.GpuVramTotalGb > 0
+                ? Math.Clamp(snap.GpuVramUsedGb!.Value / snap.GpuVramTotalGb.Value * 100.0, 0, 100)
+                : 0;
+        }
+
+        RamUsageValue = snap.RamUsage;
+        RamUsageText = $"{snap.RamUsage:F0} %";
+        RamTotalText = snap.RamTotal;
+        OsText = snap.OsVersion;
+        KernelText = snap.KernelVersion;
+
+        CpuFanText = snap.CpuFanRpm > 0 ? $"{snap.CpuFanRpm:N0} RPM" : "—";
+        GpuFanText = snap.GpuFanRpm > 0 ? $"{snap.GpuFanRpm:N0} RPM" : "—";
+        FanSourceText = snap.FanSource;
+        _cpuRpm = snap.CpuFanRpm;
+        _gpuRpm = snap.GpuFanRpm;
+
+        PowerSourceText = snap.IsPluggedIn ? "Plugged in" : "On battery";
+        PowerSourceBrush = snap.IsPluggedIn ? BrushOk : BrushWarn;
+        _powerSourceIcon = snap.IsPluggedIn ? MaterialIconKind.PowerPlugOutline : MaterialIconKind.BatteryOutline;
+        UpdatePowerIcon();
+
+        HasBattery = snap.HasBattery;
+        BatteryPercentValue = snap.BatteryPercent;
+        BatteryPercentText = snap.HasBattery ? $"{snap.BatteryPercent} %" : "—";
+        BatteryStatusText = snap.BatteryStatus;
+        BatteryTimeText = snap.BatteryTimeRemaining;
+        BatteryHealthText = snap.BatteryHealthPct.HasValue ? $"{snap.BatteryHealthPct:F1} %" : "—";
+        BatteryCyclesText = snap.BatteryCycles.HasValue ? snap.BatteryCycles.Value.ToString() : "—";
+        BatteryPowerText = snap.BatteryPowerW.HasValue ? $"{snap.BatteryPowerW:F1} W" : "—";
+
+        // Hidden page: never grow history or redraw charts.
+        if (IsVisible)
+        {
+            Push(_cpuTempHistory, snap.CpuTemp);
+            Push(_gpuTempHistory, snap.GpuTemp);
+            Push(_cpuUsageHistory, snap.CpuUsage);
+            Push(_gpuUsageHistory, snap.GpuUsage);
+            Push(_cpuFanHistory, snap.CpuFanRpm);
+            Push(_gpuFanHistory, snap.GpuFanRpm);
+        }
+
+        UpdateSpinTimer();
     }
 
-    public double CpuUsage
+    private static void Push(ObservableCollection<double> history, double value)
     {
-        get => _cpuUsage;
-        set => SetProperty(ref _cpuUsage, value);
+        if (history.Count >= MaxHistoryPoints) history.RemoveAt(0);
+        history.Add(value);
     }
 
-    public double RamUsage
+    private static IBrush TempBrush(double temp)
     {
-        get => _ramUsage;
-        set => SetProperty(ref _ramUsage, value);
+        if (temp <= 0) return BrushOk;
+        if (temp < 60) return BrushOk;
+        return temp < 80 ? BrushWarn : BrushHot;
     }
 
-    public double GpuUsage
+    private static string TempBadge(double temp)
     {
-        get => _gpuUsage;
-        set => SetProperty(ref _gpuUsage, value);
+        if (temp <= 0) return "N/A";
+        if (temp < 60) return "Cool";
+        return temp < 80 ? "Warm" : "Hot";
     }
 
-    public string BatteryStatus
+    private void UpdatePowerIcon()
     {
-        get => _batteryStatus;
-        set => SetProperty(ref _batteryStatus, value);
+        PowerSourceIcon.Kind = _powerSourceIcon;
+        PowerSourceIcon.Foreground = _powerSourceBrush;
     }
 
-    public int BatteryPercentageInt
+    // --------------------------------------------------------------- charts
+
+    private static ISeries Line(ObservableCollection<double> values, string name, SKColor color)
     {
-        get => _batteryPercentageInt;
-        set => SetProperty(ref _batteryPercentageInt, value);
+        return new LineSeries<double>
+        {
+            Values = values,
+            Name = name,
+            Stroke = new SolidColorPaint(color) { StrokeThickness = 2 },
+            Fill = new SolidColorPaint(color.WithAlpha(26)),
+            GeometrySize = 0,
+            GeometryStroke = null,
+            GeometryFill = null
+        };
     }
 
-    public string BatteryTimeRemainingString
+    private void SetChartMode(string mode)
     {
-        get => _batteryTimeRemainingString;
-        set => SetProperty(ref _batteryTimeRemainingString, value);
+        _chartMode = mode;
+
+        List<ISeries> series;
+        string axis;
+        switch (mode)
+        {
+            case "usage":
+                series = _usageSeries;
+                axis = "%";
+                break;
+            case "fan":
+                series = _fanSeries;
+                axis = "RPM";
+                break;
+            default:
+                series = _tempSeries;
+                axis = "°C";
+                break;
+        }
+
+        LiveChart.Series = series;
+        LiveChart.XAxes = new[] { new Axis { IsVisible = false, TextSize = 10 } };
+        LiveChart.YAxes = new[]
+        {
+            new Axis
+            {
+                Name = axis,
+                NamePaint = new SolidColorPaint(SKColor.Parse("#6C6C79")),
+                LabelsPaint = new SolidColorPaint(SKColor.Parse("#A7A7B4")),
+                SeparatorsPaint = new SolidColorPaint(SKColor.Parse("#23232D")) { StrokeThickness = 1 },
+                TextSize = 11,
+                MinLimit = mode == "usage" ? 0d : null,
+                MaxLimit = mode == "usage" ? 100d : null
+            }
+        };
+
+        ChartTempButton.Classes.Set("active", mode == "temp");
+        ChartUsageButton.Classes.Set("active", mode == "usage");
+        ChartFanButton.Classes.Set("active", mode == "fan");
+        ChartHintText.Text = mode switch
+        {
+            "usage" => "CPU / GPU load · two-second refresh",
+            "fan" => "Fan speed · two-second refresh",
+            _ => "CPU / GPU temperature · two-second refresh"
+        };
     }
 
-    public bool HasBattery
+    private void ChartTempButton_OnClick(object? sender, RoutedEventArgs e)
     {
-        get => _hasBattery;
-        set => SetProperty(ref _hasBattery, value);
+        SetChartMode("temp");
     }
 
-    // INotifyPropertyChanged implementation
+    private void ChartUsageButton_OnClick(object? sender, RoutedEventArgs e)
+    {
+        SetChartMode("usage");
+    }
+
+    private void ChartFanButton_OnClick(object? sender, RoutedEventArgs e)
+    {
+        SetChartMode("fan");
+    }
+
+    // ------------------------------------------------------------- fan spin
+
+    private void SpinFans()
+    {
+        if (!IsVisible) return;
+
+        const double dt = 0.05;
+        var spinning = false;
+
+        if (_cpuRpm >= MinRpmForSpin)
+        {
+            _cpuAngle = (_cpuAngle + _cpuRpm / 60.0 * 0.25 * 360.0 * dt) % 360;
+            _cpuFanTransform.Angle = _cpuAngle;
+            spinning = true;
+        }
+
+        if (_gpuRpm >= MinRpmForSpin)
+        {
+            _gpuAngle = (_gpuAngle + _gpuRpm / 60.0 * 0.25 * 360.0 * dt) % 360;
+            _gpuFanTransform.Angle = _gpuAngle;
+            spinning = true;
+        }
+
+        if (!spinning && _spinTimerRunning)
+        {
+            _spinTimer.Stop();
+            _spinTimerRunning = false;
+        }
+    }
+
+    private void UpdateSpinTimer()
+    {
+        var shouldSpin = IsVisible && (_cpuRpm >= MinRpmForSpin || _gpuRpm >= MinRpmForSpin);
+        if (shouldSpin && !_spinTimerRunning)
+        {
+            _spinTimer.Start();
+            _spinTimerRunning = true;
+        }
+        else if (!shouldSpin && _spinTimerRunning)
+        {
+            _spinTimer.Stop();
+            _spinTimerRunning = false;
+        }
+    }
+
+    public void SetFanModeLabel(string mode)
+    {
+        FanModeText = mode.ToLowerInvariant() switch
+        {
+            "max" => "Maximum cooling",
+            "manual" => "Manual speed",
+            "curve" => "Custom fan curve",
+            _ => "Automatic (EC controlled)"
+        };
+        SetActiveFanMode(mode);
+    }
+
+    public IBrush PowerSourceBrush
+    {
+        get => _powerSourceBrush;
+        set => Set(ref _powerSourceBrush, value);
+    }
+
+    // --------------------------------------------------- INotifyPropertyChanged
+
+    public string ModelText { get => _modelText; set => Set(ref _modelText, value); }
+    public string PowerSourceText { get => _powerSourceText; set => Set(ref _powerSourceText, value); }
+    public string CpuModel { get => _cpuModel; set => Set(ref _cpuModel, value); }
+    public string CpuTempText { get => _cpuTempText; set => Set(ref _cpuTempText, value); }
+    public double CpuTempValue { get => _cpuTempValue; set => Set(ref _cpuTempValue, value); }
+    public IBrush CpuTempBrush { get => _cpuTempBrush; set => Set(ref _cpuTempBrush, value); }
+    public string CpuTempBadge { get => _cpuTempBadge; set => Set(ref _cpuTempBadge, value); }
+    public string CpuUsageText { get => _cpuUsageText; set => Set(ref _cpuUsageText, value); }
+    public double CpuUsageValue { get => _cpuUsageValue; set => Set(ref _cpuUsageValue, value); }
+    public string CpuFreqText { get => _cpuFreqText; set => Set(ref _cpuFreqText, value); }
+    public string CpuPowerText { get => _cpuPowerText; set => Set(ref _cpuPowerText, value); }
+    public string GpuModel { get => _gpuModel; set => Set(ref _gpuModel, value); }
+    public string GpuTempText { get => _gpuTempText; set => Set(ref _gpuTempText, value); }
+    public double GpuTempValue { get => _gpuTempValue; set => Set(ref _gpuTempValue, value); }
+    public IBrush GpuTempBrush { get => _gpuTempBrush; set => Set(ref _gpuTempBrush, value); }
+    public string GpuTempBadge { get => _gpuTempBadge; set => Set(ref _gpuTempBadge, value); }
+    public string GpuUsageText { get => _gpuUsageText; set => Set(ref _gpuUsageText, value); }
+    public double GpuUsageValue { get => _gpuUsageValue; set => Set(ref _gpuUsageValue, value); }
+    public string GpuFreqText { get => _gpuFreqText; set => Set(ref _gpuFreqText, value); }
+    public string GpuPowerText { get => _gpuPowerText; set => Set(ref _gpuPowerText, value); }
+    public bool VramVisible { get => _vramVisible; set => Set(ref _vramVisible, value); }
+    public string VramText { get => _vramText; set => Set(ref _vramText, value); }
+    public double VramValue { get => _vramValue; set => Set(ref _vramValue, value); }
+    public string RamUsageText { get => _ramUsageText; set => Set(ref _ramUsageText, value); }
+    public double RamUsageValue { get => _ramUsageValue; set => Set(ref _ramUsageValue, value); }
+    public string RamTotalText { get => _ramTotalText; set => Set(ref _ramTotalText, value); }
+    public string OsText { get => _osText; set => Set(ref _osText, value); }
+    public string KernelText { get => _kernelText; set => Set(ref _kernelText, value); }
+    public string FanModeText { get => _fanModeText; set => Set(ref _fanModeText, value); }
+    public string CpuFanText { get => _cpuFanText; set => Set(ref _cpuFanText, value); }
+    public string GpuFanText { get => _gpuFanText; set => Set(ref _gpuFanText, value); }
+    public string FanSourceText { get => _fanSourceText; set => Set(ref _fanSourceText, value); }
+    public bool HasBattery { get => _hasBattery; set => Set(ref _hasBattery, value); }
+    public string BatteryPercentText { get => _batteryPercentText; set => Set(ref _batteryPercentText, value); }
+
+    public double BatteryPercentValue
+    {
+        get => _batteryPercentValue;
+        set => Set(ref _batteryPercentValue, value);
+    }
+
+    public string BatteryStatusText { get => _batteryStatusText; set => Set(ref _batteryStatusText, value); }
+    public string BatteryTimeText { get => _batteryTimeText; set => Set(ref _batteryTimeText, value); }
+    public string BatteryHealthText { get => _batteryHealthText; set => Set(ref _batteryHealthText, value); }
+    public string BatteryCyclesText { get => _batteryCyclesText; set => Set(ref _batteryCyclesText, value); }
+    public string BatteryPowerText { get => _batteryPowerText; set => Set(ref _batteryPowerText, value); }
+    public string CurrentProfileText { get => _currentProfileText; set => Set(ref _currentProfileText, value); }
+    public string ProfileHintText { get => _profileHintText; set => Set(ref _profileHintText, value); }
+    public string DaemonVersionText { get => _daemonVersionText; set => Set(ref _daemonVersionText, value); }
+    public string DriverVersionText { get => _driverVersionText; set => Set(ref _driverVersionText, value); }
+    public string FeatureCountText { get => _featureCountText; set => Set(ref _featureCountText, value); }
+
     public event PropertyChangedEventHandler? PropertyChanged;
 
-    private void RefreshDynamicMetrics(object? sender, EventArgs e)
+    private void Set<T>(ref T field, T value, [CallerMemberName] string? name = null)
     {
-        RefreshDynamicMetricsAsync();
-    }
-
-    private async void RefreshDynamicMetricsAsync()
-    {
-        try
-        {
-            var metricsData = await Task.Run(() =>
-            {
-                var data = new MetricsData();
-
-                // Update CPU metrics
-                data.CpuUsage = GetCpuUsage();
-                data.CpuTemp = GetCpuTemperature();
-
-                // Update fan metrics - now using cached paths
-                var fanSpeeds = GetFanSpeeds();
-                data.CpuFanSpeedRPM = fanSpeeds.cpuFan;
-                data.GpuFanSpeedRPM = fanSpeeds.gpuFan;
-
-                // Update RAM metrics
-                data.RamUsage = GetRamUsage();
-
-                // Update GPU metrics
-                var gpuMetrics = GetGpuMetrics();
-                data.GpuTemp = gpuMetrics.temperature;
-                data.GpuUsage = gpuMetrics.usage;
-
-                // Update battery metrics
-                var batteryInfo = GetBatteryInfo();
-                data.BatteryPercentage = batteryInfo.percentage;
-                data.BatteryStatus = batteryInfo.status;
-                data.BatteryTimeRemaining = $"{batteryInfo.timeRemaining:F2} hours";
-                return data;
-            });
-
-            // Update UI from UI thread
-            Dispatcher.UIThread.Post(() =>
-            {
-                // Apply the collected metrics to UI-bound properties
-                CpuUsage = metricsData.CpuUsage;
-                CpuTemp = metricsData.CpuTemp;
-                RamUsage = metricsData.RamUsage;
-                GpuTemp = metricsData.GpuTemp;
-                GpuUsage = metricsData.GpuUsage;
-                BatteryPercentageInt = metricsData.BatteryPercentage;
-                BatteryStatus = metricsData.BatteryStatus;
-                BatteryTimeRemaining.Text = metricsData.BatteryTimeRemaining;
-                BatteryLevelBar.Value = metricsData.BatteryPercentage;
-
-                CpuFanSpeed.Text = $"{metricsData.CpuFanSpeedRPM} RPM";
-                GpuFanSpeed.Text = $"{metricsData.GpuFanSpeedRPM} RPM";
-                UpdateFanAnimations();
-
-                // Update temperature history charts
-                if (_cpuTempHistory.Count >= MAX_HISTORY_POINTS)
-                    _cpuTempHistory.RemoveAt(0);
-                _cpuTempHistory.Add(metricsData.CpuTemp);
-
-                if (_gpuTempHistory.Count >= MAX_HISTORY_POINTS)
-                    _gpuTempHistory.RemoveAt(0);
-                _gpuTempHistory.Add(metricsData.GpuTemp);
-            });
-        }
-        catch (Exception ex)
-        {
-            // Log exception if needed
-            Console.WriteLine($"Error updating metrics: {ex.Message}");
-        }
-    }
-
-    private void InitializeStaticSystemInfo()
-    {
-        try
-        {
-            // Initialize CPU information
-            CpuName = GetCpuName();
-
-            // Initialize GPU information
-            DetectGpuType();
-            GpuName = GetGpuName();
-
-            // Find fan speed paths and cache them
-            FindSystemPaths();
-
-            // Update GPU driver info on UI thread
-            var gpuDriver = GetGpuDriverVersion();
-
-            // Initialize temperature graph
-            InitializeTemperatureGraph();
-
-            Dispatcher.UIThread.Post(() => { GpuDriver.Text = gpuDriver; });
-
-            // Get OS information
-            OsVersion = GetOsVersion();
-            KernelVersion = GetKernelVersion();
-
-            // Get RAM information
-            RamTotal = GetTotalRam();
-
-            // Check if system has a battery and find its directory
-            CheckForBattery();
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error during initialization: {ex.Message}");
-        }
-    }
-
-    private string GetCpuName()
-    {
-        try
-        {
-            var cpuInfo = File.ReadAllText("/proc/cpuinfo");
-            var modelNameMatch = Regex.Match(cpuInfo, @"model name\s+:\s+(.+)");
-            if (modelNameMatch.Success) return modelNameMatch.Groups[1].Value.Trim();
-            return "Unknown CPU";
-        }
-        catch
-        {
-            return "CPU Information Unavailable";
-        }
-    }
-
-    private void DetectGpuType()
-    {
-        try
-        {
-            // Check for NVIDIA GPU
-            if (Directory.Exists("/sys/class/drm/card0/device/driver/module/nvidia") ||
-                RunCommand("lspci", "").Contains("NVIDIA"))
-            {
-                _gpuType = GpuType.Nvidia;
-                return;
-            }
-
-            // Check for AMD GPU
-            if (Directory.Exists("/sys/class/drm/card0/device/driver/module/amdgpu") ||
-                RunCommand("lspci", "").Contains("AMD") ||
-                RunCommand("lspci", "").Contains("ATI"))
-            {
-                _gpuType = GpuType.Amd;
-                return;
-            }
-
-            // Default to Intel if not NVIDIA or AMD
-            if (RunCommand("lspci", "").Contains("Intel"))
-            {
-                _gpuType = GpuType.Intel;
-                return;
-            }
-
-            _gpuType = GpuType.Unknown;
-        }
-        catch
-        {
-            _gpuType = GpuType.Unknown;
-        }
-    }
-
-    private string GetGpuName()
-    {
-        try
-        {
-            switch (_gpuType)
-            {
-                case GpuType.Nvidia:
-                    return GetNvidiaGpuName();
-                case GpuType.Amd:
-                    return GetAmdGpuName();
-                case GpuType.Intel:
-                    return GetIntelGpuName();
-                default:
-                    return GetFallbackGpuName();
-            }
-        }
-        catch
-        {
-            return "GPU Information Unavailable";
-        }
-    }
-
-    private string GetNvidiaGpuName()
-    {
-        // Try nvidia-smi first (most reliable)
-        var nvidiaSmiOutput = RunCommand("nvidia-smi", "--query-gpu=name --format=csv,noheader");
-        if (!string.IsNullOrWhiteSpace(nvidiaSmiOutput)) return nvidiaSmiOutput.Trim();
-
-        // Fallback to lspci if nvidia-smi fails
-        var lspciOutput = RunCommand("lspci", "-vmm");
-        var match = Regex.Match(lspciOutput, @"Device:\s+(.+?)(?:\s*\[|\(|$)");
-        if (match.Success)
-        {
-            var rawName = match.Groups[1].Value.Trim();
-            return Regex.Replace(rawName, @"\b(G[0-9]{2}|AD[0-9]{3}[A-Z]?)\b", "").Trim(); // Remove chip codes
-        }
-
-        return "NVIDIA GPU (Unknown Model)";
-    }
-
-    private string GetAmdGpuName()
-    {
-        // Try ROCm-SMI if available
-        var rocmOutput = RunCommand("rocm-smi", "--showproductname");
-        if (!string.IsNullOrWhiteSpace(rocmOutput))
-        {
-            var match = Regex.Match(rocmOutput, @"Product Name:\s+(.+)");
-            if (match.Success)
-                return match.Groups[1].Value.Trim();
-        }
-
-        // Fallback to glxinfo
-        var glxOutput = RunCommand("glxinfo", "-B");
-        var glxMatch = Regex.Match(glxOutput, @"OpenGL renderer string:\s+(.+)");
-        if (glxMatch.Success)
-        {
-            var renderer = glxMatch.Groups[1].Value;
-            return Regex.Replace(renderer, @"(\(.*?\)|LLVM.*|DRM.*)", "").Trim(); // Clean up extra info
-        }
-
-        // Fallback to lspci
-        var lspciOutput = RunCommand("lspci", "-vmm");
-        var lspciMatch = Regex.Match(lspciOutput, @"Device:\s+(.+?)(?:\s*\[|\(|$)");
-        if (lspciMatch.Success)
-        {
-            var rawName = lspciMatch.Groups[1].Value.Trim();
-            return Regex.Replace(rawName, @"\b(R[0-9]{3}|GFX[0-9]{3})\b", "").Trim(); // Remove chip codes
-        }
-
-        return "AMD GPU (Unknown Model)";
-    }
-
-    private string GetIntelGpuName()
-    {
-        // Try intel_gpu_top if available
-        var intelOutput = RunCommand("intel_gpu_top", "-o -");
-        if (!string.IsNullOrWhiteSpace(intelOutput))
-        {
-            var match = Regex.Match(intelOutput, @"GPU:\s+(.+)");
-            if (match.Success)
-                return match.Groups[1].Value.Trim();
-        }
-
-        // Fallback to lspci
-        var lspciOutput = RunCommand("lspci", "-vmm");
-        var lspciMatch = Regex.Match(lspciOutput, @"Device:\s+(.+?)(?:\s*\[|\(|$)");
-        if (lspciMatch.Success)
-        {
-            var rawName = lspciMatch.Groups[1].Value.Trim();
-            return Regex.Replace(rawName, @"\b(Alder Lake|Raptor Lake|Xe)\b", "").Trim(); // Remove chipset names
-        }
-
-        return "Intel Graphics (Unknown Model)";
-    }
-
-    private string GetFallbackGpuName()
-    {
-        var lspciOutput = RunCommand("lspci", "-vmm");
-        var match = Regex.Match(lspciOutput, @"Device:\s+(.+?)(?:\s*\[|\(|$)");
-        return match.Success ? match.Groups[1].Value.Trim() : "Unknown GPU";
-    }
-
-    private string GetGpuDriverVersion()
-    {
-        try
-        {
-            switch (_gpuType)
-            {
-                case GpuType.Nvidia:
-                    var nvidiaOutput = RunCommand("nvidia-smi", "--query-gpu=driver_version --format=csv,noheader");
-                    if (!string.IsNullOrWhiteSpace(nvidiaOutput)) return nvidiaOutput.Trim();
-                    break;
-
-                case GpuType.Amd:
-                    // Try to get AMD driver version
-                    var amdOutput = RunCommand("glxinfo", "| grep \"OpenGL version\"");
-                    var amdMatch = Regex.Match(amdOutput, @"OpenGL version.*?(\d+\.\d+\.\d+)");
-                    if (amdMatch.Success) return amdMatch.Groups[1].Value;
-                    break;
-
-                case GpuType.Intel:
-                    // Try to get Intel driver version
-                    var intelOutput = RunCommand("glxinfo", "| grep \"OpenGL version\"");
-                    var intelMatch = Regex.Match(intelOutput, @"OpenGL version.*?(\d+\.\d+\.\d+)");
-                    if (intelMatch.Success) return intelMatch.Groups[1].Value;
-                    break;
-            }
-
-            // Fallback to generic driver version from glxinfo
-            var glxOutput = RunCommand("glxinfo", "| grep \"OpenGL version\"");
-            var match = Regex.Match(glxOutput, @"OpenGL version.*?(\d+\.\d+\.\d+)");
-            if (match.Success) return match.Groups[1].Value;
-
-            return "Unknown Driver";
-        }
-        catch
-        {
-            return "Driver Information Unavailable";
-        }
-    }
-
-    private string GetOsVersion()
-    {
-        try
-        {
-            if (File.Exists("/etc/os-release"))
-            {
-                var osRelease = File.ReadAllText("/etc/os-release");
-                var prettyNameMatch = Regex.Match(osRelease, @"PRETTY_NAME=""(.+?)""");
-                if (prettyNameMatch.Success) return prettyNameMatch.Groups[1].Value;
-            }
-
-            // Fallback
-            var lsbOutput = RunCommand("lsb_release", "-d");
-            var lsbMatch = Regex.Match(lsbOutput, @"Description:\s+(.+)");
-            if (lsbMatch.Success) return lsbMatch.Groups[1].Value;
-
-            return "Unknown Linux Distribution";
-        }
-        catch
-        {
-            return "OS Information Unavailable";
-        }
-    }
-
-    private string GetKernelVersion()
-    {
-        try
-        {
-            var output = RunCommand("uname", "-r");
-            return output.Trim();
-        }
-        catch
-        {
-            return "Kernel Information Unavailable";
-        }
-    }
-
-    private string GetTotalRam()
-    {
-        try
-        {
-            var memInfo = File.ReadAllText("/proc/meminfo");
-            var match = Regex.Match(memInfo, @"MemTotal:\s+(\d+) kB");
-            if (match.Success)
-            {
-                var kbytes = long.Parse(match.Groups[1].Value);
-                var gbytes = kbytes / (1024.0 * 1024.0);
-                return $"{gbytes:F2} GB";
-            }
-
-            return "Unknown";
-        }
-        catch
-        {
-            return "RAM Information Unavailable";
-        }
-    }
-
-    private void CheckForBattery()
-    {
-        try
-        {
-            if (!Directory.Exists("/sys/class/power_supply"))
-            {
-                HasBattery = false;
-                return;
-            }
-
-            var batteryDirs = Directory.GetDirectories("/sys/class/power_supply")
-                .Where(dir => File.Exists(Path.Combine(dir, "type")) &&
-                              File.ReadAllText(Path.Combine(dir, "type")).Trim() == "Battery")
-                .ToList();
-
-            HasBattery = batteryDirs.Any();
-
-            if (HasBattery)
-            {
-                _batteryDir = batteryDirs.First();
-
-                // Cache battery-related paths
-                if (File.Exists(Path.Combine(_batteryDir, "energy_now")))
-                    _systemInfoPaths["energy_now"] = Path.Combine(_batteryDir, "energy_now");
-                else if (File.Exists(Path.Combine(_batteryDir, "charge_now")))
-                    _systemInfoPaths["energy_now"] = Path.Combine(_batteryDir, "charge_now");
-
-                if (File.Exists(Path.Combine(_batteryDir, "power_now")))
-                    _systemInfoPaths["power_now"] = Path.Combine(_batteryDir, "power_now");
-                else if (File.Exists(Path.Combine(_batteryDir, "current_now")))
-                    _systemInfoPaths["power_now"] = Path.Combine(_batteryDir, "current_now");
-
-                if (File.Exists(Path.Combine(_batteryDir, "energy_full")))
-                    _systemInfoPaths["energy_full"] = Path.Combine(_batteryDir, "energy_full");
-                else if (File.Exists(Path.Combine(_batteryDir, "charge_full")))
-                    _systemInfoPaths["energy_full"] = Path.Combine(_batteryDir, "charge_full");
-
-                _systemInfoPaths["capacity"] = Path.Combine(_batteryDir, "capacity");
-                _systemInfoPaths["status"] = Path.Combine(_batteryDir, "status");
-            }
-        }
-        catch (Exception ex)
-        {
-            HasBattery = false;
-            Console.WriteLine($"Error checking battery: {ex.Message}");
-        }
-    }
-
-    private void InitializeTemperatureGraph()
-    {
-        // Initialize collections
-        _cpuTempHistory = new ObservableCollection<double>();
-        _gpuTempHistory = new ObservableCollection<double>();
-
-        // Initialize series
-        _tempSeries = new ObservableCollection<ISeries>
-        {
-            new LineSeries<double>
-            {
-                Values = _cpuTempHistory,
-                Name = "CPU Temperature",
-                Stroke = new SolidColorPaint(SKColors.CornflowerBlue) { StrokeThickness = 3 },
-                GeometryStroke = new SolidColorPaint(SKColors.DeepSkyBlue),
-                GeometryFill = new SolidColorPaint(SKColors.DeepSkyBlue),
-                Fill = new SolidColorPaint(SKColors.Transparent),
-                GeometrySize = 5,
-                XToolTipLabelFormatter = chartPoint => $"CPU: {chartPoint.Label}°C"
-            },
-            new LineSeries<double>
-            {
-                Values = _gpuTempHistory,
-                Name = "GPU Temperature",
-                Stroke = new SolidColorPaint(SKColors.LimeGreen) { StrokeThickness = 3 },
-                GeometryFill = new SolidColorPaint(SKColors.GreenYellow),
-                GeometryStroke = new SolidColorPaint(SKColors.GreenYellow),
-                Fill = new SolidColorPaint(SKColors.Transparent),
-                GeometrySize = 5,
-                XToolTipLabelFormatter = chartPoint => $"GPU: {chartPoint.Label}°C"
-            }
-        };
-
-        // Initialize and configure the chart
-        _temperatureChart = this.FindControl<CartesianChart>("TemperatureChart");
-        if (_temperatureChart != null)
-        {
-            _temperatureChart.Series = _tempSeries;
-            _temperatureChart.XAxes = new List<Axis>
-            {
-                new()
-                {
-                    Name = "Time",
-                    IsVisible = false
-                }
-            };
-            _temperatureChart.YAxes = new List<Axis>
-            {
-                new()
-                {
-                    Name = "Temperature (°C)",
-                    NamePaint = new SolidColorPaint(SKColors.Gray),
-                    LabelsPaint = new SolidColorPaint(SKColors.Gray)
-                }
-            };
-        }
-    }
-
-    private double GetCpuUsage()
-    {
-        try
-        {
-            var statBefore = File.ReadAllText("/proc/stat");
-            var matchBefore = Regex.Match(statBefore, @"^cpu\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)");
-
-            if (matchBefore.Success)
-            {
-                var user1 = long.Parse(matchBefore.Groups[1].Value);
-                var nice1 = long.Parse(matchBefore.Groups[2].Value);
-                var system1 = long.Parse(matchBefore.Groups[3].Value);
-                var idle1 = long.Parse(matchBefore.Groups[4].Value);
-
-                // Small sleep to measure difference
-                Thread.Sleep(100);
-
-                var statAfter = File.ReadAllText("/proc/stat");
-                var matchAfter = Regex.Match(statAfter, @"^cpu\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)");
-
-                if (matchAfter.Success)
-                {
-                    var user2 = long.Parse(matchAfter.Groups[1].Value);
-                    var nice2 = long.Parse(matchAfter.Groups[2].Value);
-                    var system2 = long.Parse(matchAfter.Groups[3].Value);
-                    var idle2 = long.Parse(matchAfter.Groups[4].Value);
-
-                    var totalBefore = user1 + nice1 + system1 + idle1;
-                    var totalAfter = user2 + nice2 + system2 + idle2;
-                    var totalDelta = totalAfter - totalBefore;
-                    var idleDelta = idle2 - idle1;
-
-                    var cpuUsage = (1.0 - idleDelta / (double)totalDelta) * 100.0;
-                    return Math.Round(cpuUsage, 1);
-                }
-            }
-
-            return 0;
-        }
-        catch
-        {
-            return 0;
-        }
-    }
-
-    private double GetCpuTemperature()
-    {
-        try
-        {
-            if (_systemInfoPaths.TryGetValue("cpu_temp", out var cpuTempPath) &&
-                TryReadMillidegreeTemperature(cpuTempPath, out var tempC))
-                return Math.Round(tempC, 1);
-
-            cpuTempPath = FindCpuTemperaturePath();
-            if (cpuTempPath != null)
-            {
-                _systemInfoPaths["cpu_temp"] = cpuTempPath;
-                if (TryReadMillidegreeTemperature(cpuTempPath, out tempC))
-                    return Math.Round(tempC, 1);
-            }
-
-            // Fallback to lm-sensors if available
-            var output = RunCommand("sensors", "");
-            var match = Regex.Match(output, @"Package id \d+:\s+\+?(\d+(?:\.\d+)?)°C");
-            if (match.Success)
-                if (double.TryParse(match.Groups[1].Value, NumberStyles.Float, CultureInfo.InvariantCulture,
-                        out tempC))
-                    return Math.Round(tempC, 1);
-
-            match = Regex.Match(output, @"(?:Tctl|Tdie):\s+\+?(\d+(?:\.\d+)?)°C");
-            if (match.Success)
-                if (double.TryParse(match.Groups[1].Value, NumberStyles.Float, CultureInfo.InvariantCulture,
-                        out tempC))
-                    return Math.Round(tempC, 1);
-
-            // Couldn't get temperature
-            return 0;
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error getting CPU temperature: {ex.Message}");
-            return 0;
-        }
-    }
-
-    private static bool TryReadMillidegreeTemperature(string path, out double temperatureC)
-    {
-        temperatureC = 0;
-
-        if (!File.Exists(path))
-            return false;
-
-        var temperatureStr = File.ReadAllText(path).Trim();
-        if (!int.TryParse(temperatureStr, out var tempValue))
-            return false;
-
-        temperatureC = tempValue / 1000.0;
-        return true;
-    }
-
-    private static string? FindCpuTemperaturePath()
-    {
-        var intelPackagePath = FindHwmonTemperaturePath(
-            "coretemp",
-            label => Regex.IsMatch(label, @"^Package id \d+$", RegexOptions.IgnoreCase));
-        if (intelPackagePath != null)
-            return intelPackagePath;
-
-        var amdPackagePath = FindHwmonTemperaturePath(
-            "k10temp",
-            label => string.Equals(label, "Tctl", StringComparison.OrdinalIgnoreCase) ||
-                     string.Equals(label, "Tdie", StringComparison.OrdinalIgnoreCase));
-        if (amdPackagePath != null)
-            return amdPackagePath;
-
-        return FindHwmonTemperaturePath(
-            "zenpower",
-            label => string.Equals(label, "Tctl", StringComparison.OrdinalIgnoreCase) ||
-                     string.Equals(label, "Tdie", StringComparison.OrdinalIgnoreCase));
-    }
-
-    private static string? FindHwmonTemperaturePath(string hwmonName, Func<string, bool> labelMatches)
-    {
-        const string hwmonRoot = "/sys/class/hwmon";
-        if (!Directory.Exists(hwmonRoot))
-            return null;
-
-        foreach (var hwmonDir in Directory.GetDirectories(hwmonRoot).OrderBy(path => path))
-        {
-            var nameFile = Path.Combine(hwmonDir, "name");
-            if (!File.Exists(nameFile))
-                continue;
-
-            var name = File.ReadAllText(nameFile).Trim();
-            if (!string.Equals(name, hwmonName, StringComparison.OrdinalIgnoreCase))
-                continue;
-
-            foreach (var labelFile in Directory.GetFiles(hwmonDir, "temp*_label").OrderBy(path => path))
-            {
-                var label = File.ReadAllText(labelFile).Trim();
-                if (!labelMatches(label))
-                    continue;
-
-                var inputFile = Path.Combine(
-                    hwmonDir,
-                    Path.GetFileName(labelFile).Replace("_label", "_input", StringComparison.Ordinal));
-                if (File.Exists(inputFile))
-                    return inputFile;
-            }
-
-            var temp1Input = Path.Combine(hwmonDir, "temp1_input");
-            if (File.Exists(temp1Input))
-                return temp1Input;
-        }
-
-        return null;
-    }
-
-    private double GetRamUsage()
-    {
-        try
-        {
-            var memInfo = File.ReadAllText("/proc/meminfo");
-
-            var totalMatch = Regex.Match(memInfo, @"MemTotal:\s+(\d+) kB");
-            var availableMatch = Regex.Match(memInfo, @"MemAvailable:\s+(\d+) kB");
-
-            if (totalMatch.Success && availableMatch.Success)
-            {
-                var totalKb = long.Parse(totalMatch.Groups[1].Value);
-                var availableKb = long.Parse(availableMatch.Groups[1].Value);
-                var usedKb = totalKb - availableKb;
-
-                var usagePercentage = usedKb / (double)totalKb * 100.0;
-                return Math.Round(usagePercentage, 1);
-            }
-
-            return 0;
-        }
-        catch
-        {
-            return 0;
-        }
-    }
-
-    private (double temperature, double usage) GetGpuMetrics()
-    {
-        try
-        {
-            switch (_gpuType)
-            {
-                case GpuType.Nvidia:
-                    return GetNvidiaGpuMetrics();
-                case GpuType.Amd:
-                    return GetAmdGpuMetrics();
-                case GpuType.Intel:
-                    return GetIntelGpuMetrics();
-                default:
-                    return (0, 0);
-            }
-        }
-        catch
-        {
-            return (0, 0);
-        }
-    }
-
-    private (double temperature, double usage) GetNvidiaGpuMetrics()
-    {
-        try
-        {
-            double temp = 0;
-            double usage = 0;
-
-            // Get GPU temperature
-            var tempOutput = RunCommand("nvidia-smi", "--query-gpu=temperature.gpu --format=csv,noheader");
-            if (double.TryParse(tempOutput.Trim(), out temp))
-            {
-                // temperature is already in celsius
-            }
-
-            // Get GPU utilization
-            var utilOutput = RunCommand("nvidia-smi", "--query-gpu=utilization.gpu --format=csv,noheader");
-            var utilMatch = Regex.Match(utilOutput, @"(\d+)");
-            if (utilMatch.Success && double.TryParse(utilMatch.Groups[1].Value, out usage))
-            {
-                // usage is already in percentage
-            }
-
-            return (temp, usage);
-        }
-        catch
-        {
-            return (0, 0);
-        }
-    }
-
-    private (double temperature, double usage) GetAmdGpuMetrics()
-    {
-        try
-        {
-            double temp = 0;
-            double usage = 0;
-
-            // Use cached GPU temp path if available
-            if (_systemInfoPaths.ContainsKey("gpu_temp") && File.Exists(_systemInfoPaths["gpu_temp"]))
-            {
-                var tempStr = File.ReadAllText(_systemInfoPaths["gpu_temp"]);
-                if (int.TryParse(tempStr.Trim(), out var tempValue))
-                    temp = tempValue / 1000.0; // Convert from milliCelsius to Celsius
-            }
-
-            // Use cached GPU usage path if available
-            if (_systemInfoPaths.ContainsKey("gpu_usage") && File.Exists(_systemInfoPaths["gpu_usage"]))
-            {
-                var usageStr = File.ReadAllText(_systemInfoPaths["gpu_usage"]);
-                if (int.TryParse(usageStr.Trim(), out var usageValue)) usage = usageValue;
-            }
-
-            // If we couldn't get values from cached paths, try radeontop
-            if (temp == 0 || usage == 0)
-            {
-                var radeontopOutput = RunCommand("radeontop", "-d- -l1");
-                var tempMatch = Regex.Match(radeontopOutput, @"Temperature:\s+(\d+)");
-                var usageMatch = Regex.Match(radeontopOutput, @"GPU\s+(\d+)%");
-
-                if (tempMatch.Success && temp == 0)
-                    if (double.TryParse(tempMatch.Groups[1].Value, out var tempValue))
-                        temp = tempValue;
-
-                if (usageMatch.Success && usage == 0)
-                    if (double.TryParse(usageMatch.Groups[1].Value, out var usageValue))
-                        usage = usageValue;
-            }
-
-            return (temp, usage);
-        }
-        catch
-        {
-            return (0, 0);
-        }
-    }
-
-    private (double temperature, double usage) GetIntelGpuMetrics()
-    {
-        try
-        {
-            double temp = 0;
-            double usage = 0;
-
-            // Use cached GPU temp path if available
-            if (_systemInfoPaths.ContainsKey("gpu_temp") && File.Exists(_systemInfoPaths["gpu_temp"]))
-            {
-                var tempStr = File.ReadAllText(_systemInfoPaths["gpu_temp"]);
-                if (int.TryParse(tempStr.Trim(), out var tempValue))
-                    temp = tempValue / 1000.0; // Convert from milliCelsius to Celsius
-            }
-
-            // For usage, we might be able to use the intel_gpu_top tool
-            var intelOutput = RunCommand("intel_gpu_top", "-o -");
-            var match = Regex.Match(intelOutput, @"Render/3D.*?(\d+)%");
-            if (match.Success)
-                if (double.TryParse(match.Groups[1].Value, out var usageValue))
-                    usage = usageValue;
-
-            return (temp, usage);
-        }
-        catch
-        {
-            return (0, 0);
-        }
-    }
-
-    private void FindSystemPaths()
-    {
-        try
-        {
-            var cpuTempPath = FindCpuTemperaturePath();
-            if (cpuTempPath != null)
-            {
-                _systemInfoPaths["cpu_temp"] = cpuTempPath;
-                Console.WriteLine($"Found CPU package temperature at {cpuTempPath}");
-            }
-            else
-            {
-                Console.WriteLine("CPU package temperature hwmon sensor not found; sensors fallback will be used");
-            }
-
-            // Find fan speed paths
-            FindFanSpeedPaths();
-
-            // Find GPU temperature path based on GPU type
-            switch (_gpuType)
-            {
-                case GpuType.Nvidia:
-                    // Nvidia uses nvidia-smi command
-                    break;
-                case GpuType.Amd:
-                    string[] possibleAmdGpuTempPaths =
-                    {
-                        "/sys/class/drm/card0/device/hwmon/hwmon*/temp1_input",
-                        "/sys/class/hwmon/hwmon*/temp1_input"
-                    };
-                    foreach (var pathPattern in possibleAmdGpuTempPaths)
-                        if (Directory.Exists(Path.GetDirectoryName(pathPattern) ?? string.Empty))
-                        {
-                            var files = Directory.GetFiles(
-                                Path.GetDirectoryName(pathPattern) ?? string.Empty,
-                                Path.GetFileName(pathPattern).Replace("*", "").Replace("?", ""),
-                                SearchOption.AllDirectories);
-                            if (files.Length > 0)
-                            {
-                                _systemInfoPaths["gpu_temp"] = files[0];
-                                break;
-                            }
-                        }
-
-                    break;
-                case GpuType.Intel:
-                    string[] possibleIntelGpuTempPaths =
-                    {
-                        "/sys/class/thermal/thermal_zone*/temp",
-                        "/sys/class/hwmon/hwmon*/temp1_input"
-                    };
-                    foreach (var pathPattern in possibleIntelGpuTempPaths)
-                        if (Directory.Exists(Path.GetDirectoryName(pathPattern) ?? string.Empty))
-                        {
-                            var dirs = Directory.GetDirectories(Path.GetDirectoryName(pathPattern) ?? string.Empty);
-                            foreach (var dir in dirs)
-                            {
-                                var typeFile = Path.Combine(dir, "type");
-                                if (File.Exists(typeFile) && File.ReadAllText(typeFile).Contains("gpu"))
-                                {
-                                    var tempFile = Path.Combine(dir, "temp");
-                                    if (File.Exists(tempFile))
-                                    {
-                                        _systemInfoPaths["gpu_temp"] = tempFile;
-                                        break;
-                                    }
-                                }
-                            }
-                        }
-
-                    break;
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error finding system paths: {ex.Message}");
-        }
-    }
-
-    private void FindFanSpeedPaths()
-    {
-        try
-        {
-            if (_fanPathsSearched)
-                return;
-
-            _fanPathsSearched = true;
-
-            // Try to find fan speed readings from hwmon directories
-            var hwmonDirs = Directory.GetDirectories("/sys/class/hwmon");
-
-            foreach (var hwmonDir in hwmonDirs)
-            {
-                // Check if this is a fan device
-                var nameFile = Path.Combine(hwmonDir, "name");
-                if (File.Exists(nameFile))
-                {
-                    var deviceName = File.ReadAllText(nameFile).Trim().ToLower();
-
-                    // Look for known Acer fan controller names
-                    if (deviceName.Contains("acer") || deviceName.Contains("fan") ||
-                        deviceName.Contains("acpi") || deviceName.Contains("thinkpad"))
-                    {
-                        var fan1File = Path.Combine(hwmonDir, "fan1_input");
-                        var fan2File = Path.Combine(hwmonDir, "fan2_input");
-
-                        if (File.Exists(fan1File) && !_systemInfoPaths.ContainsKey("cpu_fan"))
-                            _systemInfoPaths["cpu_fan"] = fan1File;
-
-                        if (File.Exists(fan2File) && !_systemInfoPaths.ContainsKey("gpu_fan"))
-                            _systemInfoPaths["gpu_fan"] = fan2File;
-
-                        if (_systemInfoPaths.ContainsKey("cpu_fan") && _systemInfoPaths.ContainsKey("gpu_fan"))
-                            return; // Found both paths, no need to continue
-                    }
-                }
-            }
-
-            // Check common paths for fan speed information
-            string[] possibleCpuFanPaths =
-            {
-                "/sys/class/hwmon/hwmon*/fan1_input",
-                "/sys/devices/platform/asus-nb-wmi/hwmon/hwmon*/fan1_input",
-                "/sys/devices/platform/it87.*/hwmon/hwmon*/fan1_input",
-                "/sys/devices/platform/nct6775.*/hwmon/hwmon*/fan1_input",
-                "/sys/class/hwmon/hwmon*/pwm1",
-                "/sys/devices/platform/acer-wmi/fan1_input"
-            };
-
-            string[] possibleGpuFanPaths =
-            {
-                "/sys/class/hwmon/hwmon*/fan2_input",
-                "/sys/class/drm/card0/device/hwmon/hwmon*/fan1_input",
-                "/sys/devices/platform/it87.*/hwmon/hwmon*/fan2_input",
-                "/sys/devices/platform/nct6775.*/hwmon/hwmon*/fan2_input",
-                "/sys/class/hwmon/hwmon*/pwm2",
-                "/sys/devices/platform/acer-wmi/fan2_input"
-            };
-
-            // Also check Acer-specific locations
-            string[] possibleAcerMultiValuePaths =
-            {
-                "/sys/devices/platform/acer-wmi/fan_speed",
-                "/proc/acpi/acer-wmi/fans"
-            };
-
-            // Check for multi-value Acer fan files
-            foreach (var path in possibleAcerMultiValuePaths)
-                if (File.Exists(path))
-                {
-                    // Check if this is a multi-value file
-                    var content = File.ReadAllText(path).Trim();
-                    if (content.Contains("CPU") || content.Contains("GPU"))
-                    {
-                        // This is a special file with both readings
-                        _systemInfoPaths["cpu_fan_special"] =
-                            path + "#CPU"; // Special marker to indicate parsing needed
-                        _systemInfoPaths["gpu_fan_special"] = path + "#GPU";
-                        return;
-                    }
-                }
-
-            // Find CPU fan speed path
-            if (!_systemInfoPaths.ContainsKey("cpu_fan"))
-                foreach (var pathPattern in possibleCpuFanPaths)
-                {
-                    var baseDir = Path.GetDirectoryName(pathPattern);
-                    if (baseDir == null || !Directory.Exists(baseDir)) continue;
-
-
-                    foreach (var hwmonDir in hwmonDirs)
-                    {
-                        var fanFile = Path.Combine(hwmonDir, Path.GetFileName(pathPattern).Replace("*", ""));
-                        if (File.Exists(fanFile))
-                        {
-                            _systemInfoPaths["cpu_fan"] = fanFile;
-                            break;
-                        }
-                    }
-
-                    if (_systemInfoPaths.ContainsKey("cpu_fan")) break;
-                }
-
-            // Find GPU fan speed path
-            if (!_systemInfoPaths.ContainsKey("gpu_fan"))
-                foreach (var pathPattern in possibleGpuFanPaths)
-                {
-                    var baseDir = Path.GetDirectoryName(pathPattern);
-                    if (baseDir == null || !Directory.Exists(baseDir)) continue;
-
-                    foreach (var hwmonDir in hwmonDirs)
-                    {
-                        var fanFile = Path.Combine(hwmonDir, Path.GetFileName(pathPattern).Replace("*", ""));
-                        if (File.Exists(fanFile))
-                        {
-                            _systemInfoPaths["gpu_fan"] = fanFile;
-                            break;
-                        }
-                    }
-
-                    if (_systemInfoPaths.ContainsKey("gpu_fan")) break;
-                }
-
-            // Search for wildcard paths using the original method as fallback
-            if (!_systemInfoPaths.ContainsKey("cpu_fan") || !_systemInfoPaths.ContainsKey("gpu_fan"))
-            {
-                string[] wildcardPaths =
-                {
-                    "/sys/class/hwmon/hwmon*/fan1_input",
-                    "/sys/class/hwmon/hwmon*/fan2_input"
-                };
-
-                foreach (var pathPattern in wildcardPaths)
-                {
-                    var dir = Path.GetDirectoryName(pathPattern) ?? string.Empty;
-                    var pattern = Path.GetFileName(pathPattern).Replace("*", "").Replace("?", "");
-
-                    if (Directory.Exists(dir))
-                    {
-                        var matchingFiles = Directory.GetFiles(dir, pattern, SearchOption.AllDirectories);
-
-                        foreach (var file in matchingFiles)
-                            try
-                            {
-                                // Make sure the file actually contains a number
-                                var content = File.ReadAllText(file).Trim();
-                                if (int.TryParse(content, out _))
-                                {
-                                    if (!_systemInfoPaths.ContainsKey("cpu_fan"))
-                                    {
-                                        _systemInfoPaths["cpu_fan"] = file;
-                                    }
-                                    else if (!_systemInfoPaths.ContainsKey("gpu_fan"))
-                                    {
-                                        _systemInfoPaths["gpu_fan"] = file;
-                                        break;
-                                    }
-                                }
-                            }
-                            catch
-                            {
-                                /* Continue if this file fails */
-                            }
-
-                        if (_systemInfoPaths.ContainsKey("cpu_fan") && _systemInfoPaths.ContainsKey("gpu_fan"))
-                            break;
-                    }
-                }
-            }
-
-            // For NVIDIA GPUs, if we couldn't find a path, try detecting with nvidia-smi
-            if (_gpuType == GpuType.Nvidia && !_systemInfoPaths.ContainsKey("gpu_fan"))
-            {
-                var nvidiaSmiOutput = RunCommand("nvidia-smi", "--query-gpu=fan.speed --format=csv,noheader");
-                if (!string.IsNullOrWhiteSpace(nvidiaSmiOutput) && nvidiaSmiOutput.Contains("%"))
-                    // Mark that we're using nvidia-smi for fan speed (special case)
-                    _systemInfoPaths["gpu_fan_nvidia_smi"] = "true";
-            }
-
-            // For AMD GPUs, if we couldn't find a path, try with rocm-smi
-            if (_gpuType == GpuType.Amd && !_systemInfoPaths.ContainsKey("gpu_fan"))
-            {
-                var rocmSmiOutput = RunCommand("rocm-smi", "--showfan");
-                if (!string.IsNullOrWhiteSpace(rocmSmiOutput) && rocmSmiOutput.Contains("Fan Speed (%)"))
-                    // Mark that we're using rocm-smi for fan speed (special case)
-                    _systemInfoPaths["gpu_fan_rocm_smi"] = "true";
-            }
-
-            // If still no paths found, we'll fallback to sensors command
-            if (!_systemInfoPaths.ContainsKey("cpu_fan"))
-                _systemInfoPaths["cpu_fan_sensors"] = "sensors#fan1"; // Special marker for sensors command
-
-            if (!_systemInfoPaths.ContainsKey("gpu_fan"))
-                _systemInfoPaths["gpu_fan_sensors"] = "sensors#fan2"; // Special marker for sensors command
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error finding fan speed paths: {ex.Message}");
-            _fanPathsSearched = true;
-        }
-    }
-
-    private (int cpuFan, int gpuFan) GetFanSpeeds()
-    {
-        try
-        {
-            // If paths haven't been searched yet, find them
-            if (!_fanPathsSearched) FindFanSpeedPaths();
-
-            var cpuFanSpeed = 0;
-            var gpuFanSpeed = 0;
-
-            // Read CPU fan speed
-            if (_systemInfoPaths.ContainsKey("cpu_fan") && File.Exists(_systemInfoPaths["cpu_fan"]))
-            {
-                var content = File.ReadAllText(_systemInfoPaths["cpu_fan"]).Trim();
-                if (int.TryParse(content, out var speed))
-                    cpuFanSpeed = speed;
-            }
-            else if (_systemInfoPaths.ContainsKey("cpu_fan_special"))
-            {
-                // This is a special case where the file contains labeled values
-                var specialPath = _systemInfoPaths["cpu_fan_special"];
-                var actualPath = specialPath.Split('#')[0];
-                var content = File.ReadAllText(actualPath).Trim();
-                var match = Regex.Match(content, @"CPU:?\s*(\d+)");
-                if (match.Success) cpuFanSpeed = int.Parse(match.Groups[1].Value);
-            }
-            else if (_systemInfoPaths.ContainsKey("cpu_fan_sensors"))
-            {
-                // Use sensors command for fan readings
-                var sensorsOutput = RunCommand("sensors", "");
-
-                // Parse based on fan number
-                var fanPattern = _systemInfoPaths["cpu_fan_sensors"].EndsWith("fan1")
-                    ? @"fan1:\s+(\d+) RPM"
-                    : @"fan\d+:\s+(\d+) RPM";
-
-                var match = Regex.Match(sensorsOutput, fanPattern);
-                if (match.Success) cpuFanSpeed = int.Parse(match.Groups[1].Value);
-            }
-
-            // Read GPU fan speed
-            if (_systemInfoPaths.ContainsKey("gpu_fan") && File.Exists(_systemInfoPaths["gpu_fan"]))
-            {
-                var content = File.ReadAllText(_systemInfoPaths["gpu_fan"]).Trim();
-                if (int.TryParse(content, out var speed))
-                    gpuFanSpeed = speed;
-            }
-            else if (_systemInfoPaths.ContainsKey("gpu_fan_special"))
-            {
-                // This is a special case where the file contains labeled values
-                var specialPath = _systemInfoPaths["gpu_fan_special"];
-                var actualPath = specialPath.Split('#')[0];
-                var content = File.ReadAllText(actualPath).Trim();
-                var match = Regex.Match(content, @"GPU:?\s*(\d+)");
-                if (match.Success) gpuFanSpeed = int.Parse(match.Groups[1].Value);
-            }
-            else if (_systemInfoPaths.ContainsKey("gpu_fan_sensors"))
-            {
-                // Use sensors command for fan readings
-                var sensorsOutput = RunCommand("sensors", "");
-
-                // Parse based on fan number
-                var fanPattern = _systemInfoPaths["gpu_fan_sensors"].EndsWith("fan2")
-                    ? @"fan2:\s+(\d+) RPM"
-                    : @"fan\d+:\s+(\d+) RPM";
-
-                var matches = Regex.Matches(sensorsOutput, fanPattern);
-                if (matches.Count >= 2)
-                    gpuFanSpeed = int.Parse(matches[1].Groups[1].Value);
-                else if (matches.Count == 1 && _systemInfoPaths["gpu_fan_sensors"].EndsWith("fan2"))
-                    gpuFanSpeed = int.Parse(matches[0].Groups[1].Value);
-            }
-            else if (_systemInfoPaths.ContainsKey("gpu_fan_nvidia_smi"))
-            {
-                var nvidiaSmiOutput = RunCommand("nvidia-smi", "--query-gpu=fan.speed --format=csv,noheader");
-                if (!string.IsNullOrWhiteSpace(nvidiaSmiOutput))
-                {
-                    var match = Regex.Match(nvidiaSmiOutput, @"(\d+)\s*%");
-                    if (match.Success)
-                    {
-                        // Convert percentage to RPM (approximation)
-                        var percentage = int.Parse(match.Groups[1].Value);
-                        gpuFanSpeed = percentage * 60; // Rough approximation
-                    }
-                }
-            }
-            else if (_systemInfoPaths.ContainsKey("gpu_fan_rocm_smi"))
-            {
-                var rocmSmiOutput = RunCommand("rocm-smi", "--showfan");
-                if (!string.IsNullOrWhiteSpace(rocmSmiOutput))
-                {
-                    var match = Regex.Match(rocmSmiOutput, @"Fan Speed \(%\)\s*:\s*(\d+)");
-                    if (match.Success)
-                    {
-                        // Convert percentage to RPM (approximation)
-                        var percentage = int.Parse(match.Groups[1].Value);
-                        gpuFanSpeed = percentage * 60; // Rough approximation
-                    }
-                }
-            }
-
-            CpuFanSpeedRPM = cpuFanSpeed;
-            GpuFanSpeedRPM = gpuFanSpeed;
-            return (cpuFanSpeed, gpuFanSpeed);
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error in GetFanSpeeds: {ex.Message}");
-            return (0, 0);
-        }
-    }
-
-    private void InitializeFanAnimations(MaterialIcon cpuFanIcon, MaterialIcon gpuFanIcon)
-    {
-        // Set up render transforms
-        cpuFanIcon.RenderTransform = new RotateTransform();
-        gpuFanIcon.RenderTransform = new RotateTransform();
-
-        // Create CPU fan animation
-        _cpuFanAnimation = new Animation
-        {
-            Duration = TimeSpan.FromSeconds(1),
-            IterationCount = IterationCount.Infinite,
-            Children =
-            {
-                new KeyFrame
-                {
-                    Cue = new Cue(0d),
-                    Setters = { new Setter(RotateTransform.AngleProperty, 0d) }
-                },
-                new KeyFrame
-                {
-                    Cue = new Cue(1d),
-                    Setters = { new Setter(RotateTransform.AngleProperty, 360d) }
-                }
-            }
-        };
-
-        // Create GPU fan animation
-        _gpuFanAnimation = new Animation
-        {
-            Duration = TimeSpan.FromSeconds(1),
-            IterationCount = IterationCount.Infinite,
-            Children =
-            {
-                new KeyFrame
-                {
-                    Cue = new Cue(0d),
-                    Setters = { new Setter(RotateTransform.AngleProperty, 0d) }
-                },
-                new KeyFrame
-                {
-                    Cue = new Cue(1d),
-                    Setters = { new Setter(RotateTransform.AngleProperty, 360d) }
-                }
-            }
-        };
-
-        // Start animations
-        _cpuFanAnimation.RunAsync(cpuFanIcon);
-        _gpuFanAnimation.RunAsync(gpuFanIcon);
-    }
-
-    private void UpdateFanAnimations()
-    {
-        try
-        {
-            var cpuFanIcon = this.FindControl<MaterialIcon>("CpuFanIcon");
-            var gpuFanIcon = this.FindControl<MaterialIcon>("GpuFanIcon");
-
-            if (cpuFanIcon == null || gpuFanIcon == null) return;
-
-            if (!_animationsInitialized)
-            {
-                InitializeFanAnimations(cpuFanIcon, gpuFanIcon);
-                _animationsInitialized = true;
-            }
-
-            if (Math.Abs(_cpuFanSpeedRpm - _lastCpuRpm) >= RPM_CHANGE_THRESHOLD)
-                UpdateFanSpeed(_cpuFanAnimation, _cpuFanSpeedRpm, ref _lastCpuRpm);
-
-            if (Math.Abs(_gpuFanSpeedRpm - _lastGpuRpm) > RPM_CHANGE_THRESHOLD)
-                UpdateFanSpeed(_gpuFanAnimation, _gpuFanSpeedRpm, ref _lastGpuRpm);
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error in UpdateFanAnimations: {ex.Message}");
-        }
-    }
-
-    private void UpdateFanSpeed(Animation animation, int currentRpm, ref int lastRpm)
-    {
-        if (currentRpm < MIN_RPM_FOR_ANIMATION)
-        {
-            animation.Duration = TimeSpan.FromSeconds(MAX_ANIMATION_DURATION);
-        }
-        else
-        {
-            var durationSeconds = 1000.0 / currentRpm * 2;
-            durationSeconds = Math.Max(MIN_ANIMATION_DURATION,
-                Math.Min(MAX_ANIMATION_DURATION, durationSeconds));
-            animation.Duration = TimeSpan.FromSeconds(durationSeconds);
-        }
-
-        lastRpm = currentRpm;
-    }
-
-    private (int percentage, string status, double timeRemaining) GetBatteryInfo()
-    {
-        if (!HasBattery) return (0, "No Battery", 0);
-
-        try
-        {
-            var percentage = 0;
-            var status = "Unknown";
-            double timeRemaining = 0;
-
-            // Read from cached paths
-            if (_systemInfoPaths.ContainsKey("capacity") && File.Exists(_systemInfoPaths["capacity"]))
-            {
-                var capacityStr = File.ReadAllText(_systemInfoPaths["capacity"]).Trim();
-                if (int.TryParse(capacityStr, out var capacity))
-                    percentage = capacity;
-            }
-
-            if (_systemInfoPaths.ContainsKey("status") && File.Exists(_systemInfoPaths["status"]))
-                status = File.ReadAllText(_systemInfoPaths["status"]).Trim();
-
-            if (_systemInfoPaths.ContainsKey("energy_now") && File.Exists(_systemInfoPaths["energy_now"]) &&
-                _systemInfoPaths.ContainsKey("power_now") && File.Exists(_systemInfoPaths["power_now"]) &&
-                _systemInfoPaths.ContainsKey("energy_full") && File.Exists(_systemInfoPaths["energy_full"]))
-                if (double.TryParse(File.ReadAllText(_systemInfoPaths["energy_now"]).Trim(), out var energyNow) &&
-                    double.TryParse(File.ReadAllText(_systemInfoPaths["power_now"]).Trim(), out var powerNow) &&
-                    double.TryParse(File.ReadAllText(_systemInfoPaths["energy_full"]).Trim(), out var energyFull))
-                    if (powerNow > 0)
-                    {
-                        if (status == "Discharging")
-                            timeRemaining = energyNow / powerNow;
-                        else if (status == "Charging")
-                            timeRemaining = (energyFull - energyNow) / powerNow;
-                    }
-
-            return (percentage, status, timeRemaining);
-        }
-        catch
-        {
-            return (0, "Error", 0);
-        }
-    }
-
-    private string RunCommand(string command, string arguments)
-    {
-        try
-        {
-            using var process = new Process
-            {
-                StartInfo = new ProcessStartInfo
-                {
-                    FileName = command,
-                    Arguments = arguments,
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                    UseShellExecute = false,
-                    CreateNoWindow = true
-                }
-            };
-
-            process.Start();
-            var output = process.StandardOutput.ReadToEnd();
-            process.WaitForExit();
-            return output;
-        }
-        catch
-        {
-            return string.Empty;
-        }
-    }
-
-    protected bool SetProperty<T>(ref T field, T value, [CallerMemberName] string? propertyName = null)
-    {
-        if (EqualityComparer<T>.Default.Equals(field, value)) return false;
+        if (EqualityComparer<T>.Default.Equals(field, value)) return;
         field = value;
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-        return true;
-    }
-
-    protected virtual void OnPropertyChanged([CallerMemberName] string? propertyName = null)
-    {
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-    }
-
-    private class MetricsData
-    {
-        public double CpuUsage { get; set; }
-        public double CpuTemp { get; set; }
-        public double RamUsage { get; set; }
-        public double GpuTemp { get; set; }
-        public double GpuUsage { get; set; }
-        public int BatteryPercentage { get; set; }
-        public string BatteryStatus { get; set; } = "Unknown";
-        public string BatteryTimeRemaining { get; set; } = "0";
-        public int CpuFanSpeedRPM { get; set; }
-        public int GpuFanSpeedRPM { get; set; }
-    }
-
-    private enum GpuType
-    {
-        Unknown,
-        Nvidia,
-        Amd,
-        Intel
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
     }
 }

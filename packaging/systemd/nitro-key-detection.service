@@ -1,0 +1,16 @@
+[Unit]
+Description=Nitro/PredatorSense Key Detection Service
+Documentation=https://github.com/PXDiv/Div-Acer-Manager-Max
+After=multi-user.target network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/lib/damx/nitro-key-detection.sh
+Restart=always
+RestartSec=10
+User=root
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
