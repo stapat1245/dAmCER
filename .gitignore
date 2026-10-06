@@ -16,7 +16,8 @@ DAMM-Daemon/build/
 DAMM-Daemon/dist/
 
 DAMM-Daemon/__pycache__/
-
+.agents/
+.claude/
 # Packaging artifacts
 build/
 dist/
